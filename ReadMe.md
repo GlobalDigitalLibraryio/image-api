@@ -54,7 +54,6 @@ Here's how to work with branches and pull requests to do so:
 4. `git push`.
 5. Open pull request, merging `ndla` into `master`.
 
-
 #### Case #3: Adding features that should be merged upstream (i.e. they are of interest to NDLA)
 1. Run `git fetch upstream/master` to fetch all new changes from NDLA.
 2. Checkout `ndla` branch.
