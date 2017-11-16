@@ -1,11 +1,11 @@
 package no.ndla.imageapi.service
 
-import java.io.ByteArrayInputStream
+import java.io.{ByteArrayInputStream, Closeable}
 import java.lang.Math.max
 
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.imageapi.model.ValidationException
-import no.ndla.imageapi.model.api.{NewImageMetaInformation}
+import no.ndla.imageapi.model.api.NewImageMetaInformation
 import no.ndla.imageapi.model.domain.{Image, ImageMetaInformation}
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.search.IndexService
@@ -60,14 +60,24 @@ trait WriteService {
       }
     }
 
+    def using[R <: Closeable, T](stream: R)(f: R => T): T =
+      try {
+        f(stream)
+      } finally {
+        stream.close()
+      }
+
     private[service] def uploadImage(file: FileItem): Try[Image] = {
       val extension = getFileExtension(file.name).getOrElse("")
       val contentType = file.getContentType.getOrElse("")
       val fileName = Stream.continually(randomFileName(extension)).dropWhile(imageStorage.objectExists).head
 
-      imageStorage.uploadFromStream(new ByteArrayInputStream(file.get), fileName, contentType, file.size).map(filePath => {
-        Image(filePath, file.size, contentType)
-      })
+      using(new ByteArrayInputStream(file.get)) {
+        stream =>
+          imageStorage.uploadFromStream(stream, fileName, contentType, file.size).map(filePath => {
+            Image(filePath, file.size, contentType)
+          })
+      }
     }
 
     private[service] def randomFileName(extension: String, length: Int = 12): String = {

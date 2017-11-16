@@ -60,10 +60,6 @@ object ComponentRegistry
   dataSource.setCurrentSchema(ImageApiProperties.MetaSchema)
 
   val amazonClient: AmazonS3 = AmazonS3ClientBuilder.standard()
-    .withClientConfiguration(
-      new ClientConfiguration()
-      .withTcpKeepAlive(false)
-    )
     .withRegion(Regions.EU_CENTRAL_1)
     .build()
 
