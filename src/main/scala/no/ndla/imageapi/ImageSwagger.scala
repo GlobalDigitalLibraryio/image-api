@@ -28,5 +28,5 @@ object ImagesApiInfo {
 }
 
 class ImageSwagger extends Swagger("2.0", "0.8", ImagesApiInfo.apiInfo) {
-  addAuthorization(OAuth(List("images:all"), List(ApplicationGrant(TokenEndpoint("/auth/tokens", "access_token")))))
+  addAuthorization(OAuth(List("images:write"), List(ImplicitGrant(LoginEndpoint(ImageApiProperties.LoginEndpoint),"access_token"))))
 }

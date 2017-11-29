@@ -30,7 +30,7 @@ trait ImageControllerV2 {
 
   class ImageControllerV2(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport with FileUploadSupport {
     // Swagger-stuff
-    protected val applicationDescription = "API for accessing images from ndla.no."
+    protected val applicationDescription = "API for accessing images from digitallibrary.io."
     protected implicit override val jsonFormats: Formats = DefaultFormats
 
     // Additional models used in error responses
@@ -47,7 +47,7 @@ trait ImageControllerV2 {
     val getImages =
       (apiOperation[SearchResult]("getImages")
         summary "Show all images"
-        notes "Shows all the images in the ndla.no database. You can search it too."
+        notes "Shows all the images in the digitallibrary.io database. You can search it too."
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
         headerParam[Option[String]]("app-key").description("Your app-key. May be omitted to access api anonymously, but rate limiting may apply on anonymous access."),
@@ -58,19 +58,17 @@ trait ImageControllerV2 {
         queryParam[Option[Int]]("page").description("The page number of the search hits to display."),
         queryParam[Option[Int]]("page-size").description("The number of search hits to display for each page.")
       )
-        authorizations "oauth2"
         responseMessages response500)
 
     val getImagesPost =
       (apiOperation[List[SearchResult]]("getImagesPost")
         summary "Show all images"
-        notes "Shows all the images in the ndla.no database. You can search it too."
+        notes "Shows all the images in the digitallibrary.io database. You can search it too."
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id"),
         headerParam[Option[String]]("app-key").description("Your app-key"),
         bodyParam[SearchParams]
       )
-        authorizations "oauth2"
         responseMessages(response400, response500))
 
     val getByImageId =
@@ -83,7 +81,6 @@ trait ImageControllerV2 {
         pathParam[String]("image_id").description("Image_id of the image that needs to be fetched."),
         queryParam[Option[String]]("language").description("The ISO 639-1 language code describing language used in query-params.")
       )
-        authorizations "oauth2"
         responseMessages(response404, response500))
 
     val newImage =
