@@ -97,8 +97,7 @@ object ImageApiProperties extends LazyLogging {
   def getCloudFrontUrl(env: String): String = {
     env match {
       case "prod" => "https://images.digitallibrary.io"
-      case "staging" => "https://images.staging.digitallibrary.io"
-      case "test" => "https://images.test.digitallibrary.io"
+      case "staging" | "test" => s"https://images.$env.digitallibrary.io"
       case "local" => Domain + RawControllerPath
       case _ => throw new IllegalArgumentException(s"$env is not a valid env")
     }
