@@ -62,6 +62,8 @@ object ImageApiProperties extends LazyLogging {
   val RunWithSignedSearchRequests = propOrElse("RUN_WITH_SIGNED_SEARCH_REQUESTS", "true").toBoolean
   val ElasticSearchIndexMaxResultWindow = 10000
 
+  val LoginEndpoint = "https://digitallibrary.eu.auth0.com/authorize"
+
   val MappingHost = "mapping-api.ndla-local"
   val TopicAPIUrl = "http://api.topic.ndla.no/rest/v1/keywords/?filter[node]=ndlanode_"
 
@@ -95,8 +97,7 @@ object ImageApiProperties extends LazyLogging {
   def getCloudFrontUrl(env: String): String = {
     env match {
       case "prod" => "https://images.digitallibrary.io"
-      case "staging" => "https://images.staging.digitallibrary.io"
-      case "test" => "https://images.test.digitallibrary.io"
+      case "staging" | "test" => s"https://images.$env.digitallibrary.io"
       case "local" => Domain + RawControllerPath
       case _ => throw new IllegalArgumentException(s"$env is not a valid env")
     }
