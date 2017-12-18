@@ -18,6 +18,13 @@ For a more detailed documentation of the API, please refer to the [API documenta
 
 **Create Docker Image:** sbt docker
 
+
+### Setting up Minio for local S3-like storage
+[Minio](https://docs.minio.io/) is used when running `image-api` locally, so access to AWS S3 isn't necessary.
+Minio can be run with Docker. Make sure that it is on the same Docker network, and that Minio is aliased `minio.gdl-local`.
+`image-api` expects the existence of a bucket called `local.images.gdl`. This has to be created manually, using either
+Minio's web interface or command line tools.
+
 ### IntegrationTest Tag and sbt run problems
 Tests that need a running elasticsearch outside of component, e.g. in your local docker are marked with selfdefined java
 annotation test tag  ```IntegrationTag``` in ```/ndla/article-api/src/test/java/no/ndla/tag/IntegrationTest.java```. 
