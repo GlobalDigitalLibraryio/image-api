@@ -9,6 +9,8 @@
 package no.ndla.imageapi
 
 import com.amazonaws.ClientConfiguration
+import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
+import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
 import no.ndla.imageapi.auth.{Role, User}
@@ -59,13 +61,23 @@ object ComponentRegistry
   dataSource.setMaxConnections(ImageApiProperties.MetaMaxConnections)
   dataSource.setCurrentSchema(ImageApiProperties.MetaSchema)
 
-  val amazonClient: AmazonS3 = AmazonS3ClientBuilder.standard()
-    .withClientConfiguration(
-      new ClientConfiguration()
-      .withTcpKeepAlive(false)
-    )
-    .withRegion(Regions.EU_CENTRAL_1)
-    .build()
+  val amazonClient: AmazonS3 = {
+    val commonClient = AmazonS3ClientBuilder
+      .standard()
+      .withClientConfiguration(
+        new ClientConfiguration()
+          .withTcpKeepAlive(false)
+      )
+
+    (ImageApiProperties.Environment match {
+      case "local" =>
+        commonClient
+          .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("http://minio.gdl-local:9000", Regions.EU_CENTRAL_1.name()))
+          .withPathStyleAccessEnabled(true)
+      case _ =>
+        commonClient.withRegion(Regions.EU_CENTRAL_1)
+    }).build()
+  }
 
   lazy val indexService = new IndexService
   lazy val searchService = new SearchService
