@@ -10,16 +10,13 @@ package no.ndla.imageapi
 
 
 import com.amazonaws.services.s3.AmazonS3
-import no.ndla.imageapi.controller.{HealthController, ImageController, InternController}
-import com.amazonaws.services.s3.AmazonS3Client
-import io.searchbox.client.JestClient
+import io.digitallibrary.network.GdlClient
 import no.ndla.imageapi.auth.{Role, User}
 import no.ndla.imageapi.controller.{HealthController, ImageController, InternController, RawController}
 import no.ndla.imageapi.integration._
 import no.ndla.imageapi.repository._
 import no.ndla.imageapi.service._
 import no.ndla.imageapi.service.search.{IndexBuilderService, IndexService, SearchConverterService, SearchService}
-import io.digitallibrary.network.GdlClient
 import org.scalatest.mockito.MockitoSugar
 
 trait TestEnvironment
@@ -35,7 +32,6 @@ trait TestEnvironment
     with AmazonClient
     with ImageStorageService
     with IndexBuilderService
-    with ImportService
     with MigrationApiClient
     with GdlClient
     with InternController
@@ -59,7 +55,6 @@ trait TestEnvironment
   val writeService = mock[WriteService]
   val imageStorage = mock[AmazonImageStorageService]
 
-  val importService = mock[ImportService]
   val gdlClient = mock[GdlClient]
   val migrationApiClient = mock[MigrationApiClient]
   val imageController = mock[ImageController]

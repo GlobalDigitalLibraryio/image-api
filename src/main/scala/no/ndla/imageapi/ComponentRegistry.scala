@@ -35,7 +35,6 @@ object ComponentRegistry
   with IndexBuilderService
   with GdlClient
   with MigrationApiClient
-  with ImportService
   with ConverterService
   with ValidationService
   with TagsService
@@ -86,7 +85,6 @@ object ComponentRegistry
   lazy val writeService = new WriteService
   lazy val validationService = new ValidationService
   lazy val imageStorage = new AmazonImageStorageService
-  lazy val importService = new ImportService
   lazy val gdlClient = new GdlClient
   lazy val migrationApiClient = new MigrationApiClient
   lazy val imageController = new ImageController
