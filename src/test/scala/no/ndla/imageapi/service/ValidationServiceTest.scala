@@ -4,10 +4,8 @@ import no.ndla.imageapi.model.ValidationException
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.{TestEnvironment, UnitSuite}
 import org.joda.time.{DateTime, DateTimeZone}
-import org.scalatra.servlet.FileItem
 import org.mockito.Mockito._
-
-import scala.util.Failure
+import org.scalatra.servlet.FileItem
 
 class ValidationServiceTest extends UnitSuite with TestEnvironment {
   override val validationService = new ValidationService
@@ -166,14 +164,6 @@ class ValidationServiceTest extends UnitSuite with TestEnvironment {
   test("validate returns success if captions are valid") {
     val imageMeta = sampleImageMeta.copy(captions=Seq(ImageCaption("caption", "eng")))
     validationService.validate(imageMeta).isSuccess should be (true)
-  }
-
-  test("languageCodeIsValid requires 3 lowercase letters") {
-    val results = for {
-      language <- Seq("", "a", "no", "enG", "ENG", "nOB", "nobb", "---")
-      imageMeta = sampleImageMeta.copy(alttexts=Seq(ImageAltText("alt text", language)))
-    } yield (language, validationService.validate(imageMeta).isSuccess)
-    results.foreach{case (lang, success) => withClue(s"Language '$lang' should not be accepted.") { success should be (false)} }
   }
 
 }
