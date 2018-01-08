@@ -9,17 +9,16 @@
 package no.ndla.imageapi
 
 import com.amazonaws.ClientConfiguration
-import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import io.digitallibrary.network.GdlClient
 import no.ndla.imageapi.auth.{Role, User}
 import no.ndla.imageapi.controller._
 import no.ndla.imageapi.integration._
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service._
 import no.ndla.imageapi.service.search.{IndexBuilderService, IndexService, SearchConverterService, SearchService}
-import io.digitallibrary.network.GdlClient
 import org.postgresql.ds.PGPoolingDataSource
 
 object ComponentRegistry
@@ -37,7 +36,6 @@ object ComponentRegistry
   with MigrationApiClient
   with ConverterService
   with ValidationService
-  with TagsService
   with ImageController
   with ImageControllerV2
   with RawController
@@ -94,7 +92,6 @@ object ComponentRegistry
   lazy val healthController = new HealthController
   lazy val resourcesApp = new ResourcesApp
   lazy val converterService = new ConverterService
-  lazy val tagsService = new TagsService
   lazy val jestClient = JestClientFactory.getClient()
   lazy val searchConverterService = new SearchConverterService
 

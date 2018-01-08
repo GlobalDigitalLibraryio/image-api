@@ -37,7 +37,6 @@ trait TestEnvironment
     with InternController
     with ImageController
     with RawController
-    with TagsService
     with HealthController
     with ImageConverter
     with MockitoSugar
@@ -63,7 +62,6 @@ trait TestEnvironment
   val healthController = mock[HealthController]
   val converterService = mock[ConverterService]
   val validationService = mock[ValidationService]
-  val tagsService = mock[TagsService]
   val jestClient = mock[NdlaJestClient]
   val searchConverterService = mock[SearchConverterService]
   val imageConverter = mock[ImageConverter]
