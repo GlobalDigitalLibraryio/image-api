@@ -32,7 +32,6 @@ trait TestEnvironment
     with AmazonClient
     with ImageStorageService
     with IndexBuilderService
-    with MigrationApiClient
     with GdlClient
     with InternController
     with ImageController
@@ -55,7 +54,6 @@ trait TestEnvironment
   val imageStorage = mock[AmazonImageStorageService]
 
   val gdlClient = mock[GdlClient]
-  val migrationApiClient = mock[MigrationApiClient]
   val imageController = mock[ImageController]
   val rawController = mock[RawController]
   val internController = mock[InternController]
