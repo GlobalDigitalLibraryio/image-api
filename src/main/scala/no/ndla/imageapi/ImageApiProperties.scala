@@ -64,13 +64,6 @@ object ImageApiProperties extends LazyLogging {
 
   val LoginEndpoint = "https://digitallibrary.eu.auth0.com/authorize"
 
-  val MappingHost = "mapping-api.ndla-local"
-  val TopicAPIUrl = "http://api.topic.ndla.no/rest/v1/keywords/?filter[node]=ndlanode_"
-
-  val MigrationHost = prop("MIGRATION_HOST")
-  val MigrationUser = prop("MIGRATION_USER")
-  val MigrationPassword = prop("MIGRATION_PASSWORD")
-
   lazy val Domain = Domains.get(Environment)
   val ImageApiUrlBase = Domain + ImageControllerPath + "/"
 

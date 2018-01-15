@@ -8,7 +8,7 @@
 
 package no.ndla.imageapi.controller
 
-import no.ndla.imageapi.model.{S3UploadException, api, domain}
+import no.ndla.imageapi.model.{api, domain}
 import no.ndla.imageapi.{ImageApiProperties, TestEnvironment, UnitSuite}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.json4s.jackson.Serialization._
@@ -30,7 +30,7 @@ class InternControllerTest extends UnitSuite with ScalatraSuite with TestEnviron
   val DefaultDomainImageMetaInformation = domain.ImageMetaInformation(Some(1), List(), List(), "/test.jpg", 0, "", domain.Copyright(domain.License("", "", None), "", List()), List(), List(), "ndla124", updated)
 
   override def beforeEach = {
-    reset(imageRepository, importService, indexService, indexBuilderService)
+    reset(imageRepository, indexService, indexBuilderService)
   }
 
   test("That GET /extern/abc returns 404") {
@@ -54,29 +54,6 @@ class InternControllerTest extends UnitSuite with ScalatraSuite with TestEnviron
     get("/extern/123") {
       status should equal (200)
       body should equal (write(DefaultApiImageMetaInformation))
-    }
-  }
-
-  test("That POST /import/123 returns 200 OK when import is a success") {
-    when(importService.importImage(eqTo("123"))).thenReturn(Success(DefaultDomainImageMetaInformation))
-    post("/import/123") {
-      status should equal (200)
-    }
-  }
-
-  test("That POST /import/123 returns 500 with error message when import failed") {
-    when(importService.importImage(eqTo("123"))).thenReturn(Failure(new NullPointerException("null")))
-    post("/import/123") {
-      status should equal (500)
-      body indexOf "external_id 123 failed after" should be > 0
-    }
-  }
-
-  test("That POST /import/123 returns 504 with error message when import failed on S3 upload") {
-    when(importService.importImage(eqTo("123"))).thenThrow(new S3UploadException(s"Upload of image:[name] to S3 failed."))
-    post("/import/123") {
-      status should equal (504)
-      body indexOf "Upload of image:[name] to S3 failed" should be > 0
     }
   }
 

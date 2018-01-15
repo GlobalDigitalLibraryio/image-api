@@ -10,10 +10,11 @@ package no.ndla.imageapi.controller
 
 import java.util.Date
 
+import no.ndla.imageapi.ImageApiProperties.MaxImageFileSizeBytes
 import no.ndla.imageapi.model.api.NewImageMetaInformation
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.{ImageSwagger, TestEnvironment, UnitSuite}
-import no.ndla.imageapi.ImageApiProperties.MaxImageFileSizeBytes
+import org.mockito.ArgumentCaptor
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.postgresql.util.PSQLException
@@ -40,6 +41,8 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
   lazy val controller = new ImageController
   addServlet(controller, "/*")
 
+  override def beforeEach(): Unit = reset(writeService)
+
   case class PretendFile(content: Array[Byte], contentType: String, fileName: String) extends Uploadable {
     override def contentLength: Long = content.length
   }
@@ -58,7 +61,47 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
       |        "alttext": "En skeiv utedodør med utskåret hjerte. Foto.",
       |        "language": "nb"
       |    }],
-      |    "captions": [],
+      |    "tags": [{
+      |        "tags": ["noen", "tags", "her"],
+      |        "language": "nb"
+      |    }],
+      |    "captions": [{
+      |        "caption": "En caption",
+      |        "language": "nb"
+      |    }],
+      |    "copyright": {
+      |        "origin": "http://www.scanpix.no",
+      |        "authors": [],
+      |        "license": {
+      |            "description": "Creative Commons Attribution-ShareAlike 2.0 Generic",
+      |            "url": "https://creativecommons.org/licenses/by-sa/2.0/",
+      |            "license": "by-nc-sa"
+      |        }
+      |    }
+      |}
+      |
+    """.stripMargin
+
+  val sampleNewImageMetaWithInvalidLanguages =
+    """
+      |{
+      |    "externalId": "123abc",
+      |    "titles": [{
+      |        "title": "Utedo med hjerte på døra",
+      |        "language": "n"
+      |    }],
+      |    "alttexts": [{
+      |        "alttext": "En skeiv utedodør med utskåret hjerte. Foto.",
+      |        "language": "n"
+      |    }],
+      |    "tags": [{
+      |        "tags": ["noen", "tags", "her"],
+      |        "language": "nb"
+      |    }],
+      |    "captions": [{
+      |        "caption": "En caption",
+      |        "language": "nb"
+      |    }],
       |    "copyright": {
       |        "origin": "http://www.scanpix.no",
       |        "authors": [],
@@ -74,7 +117,7 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
 
   test("That POST / returns 400 if parameters are missing") {
     post("/", Map("metadata" -> sampleNewImageMeta), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
-      status should equal (400)
+      status should equal(400)
     }
   }
 
@@ -91,32 +134,53 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
     when(writeService.storeNewImage(any[NewImageMetaInformation], any[FileItem])).thenReturn(Success(sampleImageMeta))
 
     post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
-      status should equal (200)
+      status should equal(200)
+    }
+  }
+
+  test("That POST / with language 'nb' transforms the language to 'nob'") {
+    when(writeService.storeNewImage(any[NewImageMetaInformation], any[FileItem])).thenReturn(Success(mock[ImageMetaInformation]))
+    val argumentCaptor = ArgumentCaptor.forClass(classOf[NewImageMetaInformation])
+    post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal(200)
+      verify(writeService).storeNewImage(argumentCaptor.capture(), any[FileItem])
+      argumentCaptor.getValue.titles.map(_.language).distinct should be (Seq("nob"))
+      argumentCaptor.getValue.alttexts.map(_.language).distinct should be (Seq("nob"))
+      argumentCaptor.getValue.tags.get.map(_.language).distinct should be (Seq("nob"))
+      argumentCaptor.getValue.captions.get.map(_.language).distinct should be (Seq("nob"))
+    }
+  }
+
+  test("That POST / with invalid language 'n' returns 400") {
+    post("/", Map("metadata" -> sampleNewImageMetaWithInvalidLanguages), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal(400)
     }
   }
 
   test("That POST / returns 403 if no auth-header") {
     post("/", Map("metadata" -> sampleNewImageMeta)) {
-      status should equal (403)
+      status should equal(403)
     }
   }
 
   test("That POST / returns 403 if auth header does not have expected role") {
     post("/", Map("metadata" -> sampleNewImageMeta), headers = Map("Authorization" -> authHeaderWithWrongRole)) {
-      status should equal (403)
+      status should equal(403)
     }
   }
 
   test("That POST / returns 403 if auth header does not have any roles") {
     post("/", Map("metadata" -> sampleNewImageMeta), headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
-      status should equal (403)
+      status should equal(403)
     }
   }
 
   test("That POST / returns 413 if file is too big") {
-    val content: Array[Byte] = Array.fill(MaxImageFileSizeBytes + 1) { 0 }
+    val content: Array[Byte] = Array.fill(MaxImageFileSizeBytes + 1) {
+      0
+    }
     post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile.copy(content)), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
-      status should equal (413)
+      status should equal(413)
     }
   }
 
@@ -125,7 +189,7 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
     when(duplicateKeyException.getMessage).thenReturn("ERROR: duplicate key value violates unique constraint \"cst_uni_external_id\"")
     when(writeService.storeNewImage(any[NewImageMetaInformation], any[FileItem])).thenReturn(Failure(duplicateKeyException))
     post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
-      status should equal (409)
+      status should equal(409)
     }
   }
 
@@ -134,14 +198,14 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
     when(duplicateKeyException.getMessage).thenReturn("ERROR: something completely different went wrong")
     when(writeService.storeNewImage(any[NewImageMetaInformation], any[FileItem])).thenReturn(Failure(duplicateKeyException))
     post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
-      status should equal (500)
+      status should equal(500)
     }
   }
 
   test("That POST / returns 500 if an unexpected error occurs") {
     when(writeService.storeNewImage(any[NewImageMetaInformation], any[FileItem])).thenReturn(Failure(mock[RuntimeException]))
     post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
-      status should equal (500)
+      status should equal(500)
     }
   }
 

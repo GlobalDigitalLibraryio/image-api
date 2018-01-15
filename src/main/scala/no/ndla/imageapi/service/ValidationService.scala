@@ -1,8 +1,8 @@
 package no.ndla.imageapi.service
 
+import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.model.{ValidationException, ValidationMessage}
-import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
 import org.jsoup.Jsoup
 import org.jsoup.safety.Whitelist
@@ -94,19 +94,12 @@ trait ValidationService {
     }
 
     private def validateLanguage(fieldPath: String, languageCode: String): Option[ValidationMessage] = {
-      if (languageCodeIsValid(languageCode)) {
+      if (Try(LanguageTag(languageCode)).isSuccess) {
         None
       } else {
         Some(ValidationMessage(fieldPath, s"Language '$languageCode' is not a supported value."))
       }
     }
-
-    private def languageCodeIsValid(languageCode: String): Boolean = {
-      val allLowerCase = languageCode.forall(_.isLower)
-      val lengthIsOk = languageCode.length == 3
-      allLowerCase && lengthIsOk
-    }
-
 
   }
 }
