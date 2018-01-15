@@ -8,7 +8,7 @@
 
 package no.ndla.imageapi.controller
 
-import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.language.model.{LanguageSubtagNotSupportedException, LanguageTag}
 import no.ndla.imageapi.ImageApiProperties.{MaxImageFileSizeBytes, RoleWithWriteAccess}
 import no.ndla.imageapi.auth.Role
 import no.ndla.imageapi.model.api.{Error, ImageMetaInformation, NewImageMetaInformation, SearchParams, SearchResult, ValidationError}
@@ -22,7 +22,7 @@ import org.scalatra.servlet.{FileUploadSupport, MultipartConfig}
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger._
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait ImageController {
   this: ImageRepository with SearchService with ConverterService with WriteService with Role =>
@@ -153,14 +153,18 @@ trait ImageController {
 
       val file = fileParams.getOrElse("file", throw new ValidationException(errors = Seq(ValidationMessage("file", "The request must contain an image file"))))
 
-      val newImageFixedLanguages = newImage.copy(
+      val newImageWithNormalizedLanguages = Try(newImage.copy(
         titles = newImage.titles.map(t => t.copy(language = LanguageTag(t.language).toString)),
         alttexts = newImage.alttexts.map(a => a.copy(language = LanguageTag(a.language).toString)),
         tags = newImage.tags.map(tags => tags.map(t => t.copy(language = LanguageTag(t.language).toString))),
         captions = newImage.captions.map(captions => captions.map(c => c.copy(language = LanguageTag(c.language).toString)))
-      )
+      )) match {
+        case Success(n) => n
+        case Failure(e: LanguageSubtagNotSupportedException) => halt(status = 400, body = Error(Error.VALIDATION, e.getMessage))
+        case Failure(e) => throw e
+      }
 
-      writeService.storeNewImage(newImageFixedLanguages, file).map(converterService.asApiImageMetaInformationWithApplicationUrl) match {
+      writeService.storeNewImage(newImageWithNormalizedLanguages, file).map(converterService.asApiImageMetaInformationWithApplicationUrl) match {
         case Success(imageMeta) => imageMeta
         case Failure(e) => e match {
           case _: PSQLException if e.getMessage.contains("duplicate key value violates unique constraint") =>

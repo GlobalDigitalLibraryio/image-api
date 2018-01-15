@@ -82,6 +82,39 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
       |
     """.stripMargin
 
+  val sampleNewImageMetaWithInvalidLanguages =
+    """
+      |{
+      |    "externalId": "123abc",
+      |    "titles": [{
+      |        "title": "Utedo med hjerte på døra",
+      |        "language": "n"
+      |    }],
+      |    "alttexts": [{
+      |        "alttext": "En skeiv utedodør med utskåret hjerte. Foto.",
+      |        "language": "n"
+      |    }],
+      |    "tags": [{
+      |        "tags": ["noen", "tags", "her"],
+      |        "language": "nb"
+      |    }],
+      |    "captions": [{
+      |        "caption": "En caption",
+      |        "language": "nb"
+      |    }],
+      |    "copyright": {
+      |        "origin": "http://www.scanpix.no",
+      |        "authors": [],
+      |        "license": {
+      |            "description": "Creative Commons Attribution-ShareAlike 2.0 Generic",
+      |            "url": "https://creativecommons.org/licenses/by-sa/2.0/",
+      |            "license": "by-nc-sa"
+      |        }
+      |    }
+      |}
+      |
+    """.stripMargin
+
   test("That POST / returns 400 if parameters are missing") {
     post("/", Map("metadata" -> sampleNewImageMeta), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(400)
@@ -115,6 +148,12 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
       argumentCaptor.getValue.alttexts.map(_.language).distinct should be (Seq("nob"))
       argumentCaptor.getValue.tags.get.map(_.language).distinct should be (Seq("nob"))
       argumentCaptor.getValue.captions.get.map(_.language).distinct should be (Seq("nob"))
+    }
+  }
+
+  test("That POST / with invalid language 'n' returns 400") {
+    post("/", Map("metadata" -> sampleNewImageMetaWithInvalidLanguages), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal(400)
     }
   }
 
