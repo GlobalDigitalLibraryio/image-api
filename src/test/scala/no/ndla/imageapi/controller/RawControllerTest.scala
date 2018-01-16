@@ -37,6 +37,12 @@ class RawControllerTest extends UnitSuite with ScalatraSuite with TestEnvironmen
     }
   }
 
+  test("That GET /image.jpg includes cache control headers if image was found") {
+    get(s"/$imageName") {
+      response.headers.get("Cache-Control") should equal (Some(Seq("max-age=3600")))
+    }
+  }
+
   test("That GET /image.jpg returns 404 if image was not found") {
     when(imageStorage.get(any[String])).thenReturn(Failure(mock[ImageNotFoundException]))
     get(s"/$imageName") {
@@ -95,6 +101,12 @@ class RawControllerTest extends UnitSuite with ScalatraSuite with TestEnvironmen
       val image = ImageIO.read(new ByteArrayInputStream(bodyBytes))
       image.getWidth should equal(189)
       image.getHeight should equal(60)
+    }
+  }
+
+  test("That GET /id/1 includes cache control headers if image was found") {
+    get(s"/id/$id") {
+      response.headers.get("Cache-Control") should equal (Some(Seq("max-age=3600")))
     }
   }
 
