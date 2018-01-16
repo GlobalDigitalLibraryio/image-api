@@ -10,6 +10,8 @@ import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger.SwaggerSupportSyntax.OperationBuilder
 import org.scalatra.swagger.{Parameter, ResponseMessage, Swagger, SwaggerSupport}
 import com.netaporter.uri.Uri.{parse => uriParse}
+import org.scalatra.Ok
+
 import scala.util.{Failure, Success, Try}
 
 trait RawController {
@@ -23,6 +25,7 @@ trait RawController {
 
     val response404 = ResponseMessage(404, "Not found", Some("Error"))
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
+    val cacheHeaders = Map("Cache-Control" -> "max-age=3600")
 
     val getImageParams: List[Parameter] = List(
       headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
@@ -62,14 +65,14 @@ trait RawController {
       ).responseMessages(response404, response500)
 
     get("/:name", operation(getImageFile)) {
-      getRawImage(params("name"))
+      Ok(getRawImage(params("name")), cacheHeaders)
     }
 
     get("/id/:id", operation(getImageFileById)) {
      imageRepository.withId(long("id")) match {
         case Some(imageMeta) =>
           val imageName = uriParse(imageMeta.imageUrl).toStringRaw.substring(1) // Strip heading '/'
-          getRawImage(imageName)
+          Ok(getRawImage(imageName), cacheHeaders)
         case None => None
       }
     }
