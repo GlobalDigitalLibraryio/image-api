@@ -1,17 +1,16 @@
 package no.ndla.imageapi.service
 
 import java.io.ByteArrayInputStream
-import java.lang.Math.max
 
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.imageapi.model.ValidationException
-import no.ndla.imageapi.model.api.{NewImageMetaInformation}
+import no.ndla.imageapi.model.api.NewImageMetaInformation
 import no.ndla.imageapi.model.domain.{Image, ImageMetaInformation}
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.search.IndexService
 import org.scalatra.servlet.FileItem
 
-import scala.util.{Failure, Random, Success, Try}
+import scala.util.{Failure, Success, Try}
 
 trait WriteService {
   this: ConverterService with ValidationService with ImageRepository with IndexService with ImageStorageService =>
@@ -20,12 +19,12 @@ trait WriteService {
   class WriteService extends LazyLogging {
     def storeNewImage(newImage: NewImageMetaInformation, file: FileItem): Try[ImageMetaInformation] = {
       validationService.validateImageFile(file) match {
-        case Some(validationMessage) => return Failure(new ValidationException(errors=Seq(validationMessage)))
+        case Some(validationMessage) => return Failure(new ValidationException(errors = Seq(validationMessage)))
         case _ =>
       }
 
       val domainImage = uploadImage(file).map(uploadedImage =>
-          converterService.asDomainImageMetaInformation(newImage, uploadedImage)) match {
+        converterService.asDomainImageMetaInformation(newImage, uploadedImage)) match {
         case Failure(e) => return Failure(e)
         case Success(image) => image
       }
@@ -53,28 +52,34 @@ trait WriteService {
       }
     }
 
-    private[service] def getFileExtension(fileName: String): Option[String] = {
-      fileName.lastIndexOf(".") match {
-        case index: Int if index > -1 => Some(fileName.substring(index))
-        case _ => None
+    private[service] def uploadImage(file: FileItem): Try[Image] = {
+      val contentType = file.getContentType.getOrElse("")
+      val fileName = filenameToHashFilename(file.name, md5Hash(file.get))
+      if (imageStorage.objectExists(fileName)) {
+        logger.info(s"$fileName already exists in S3, skipping upload and using existing image")
+        Success(Image(fileName, file.size, contentType))
+      } else {
+        imageStorage.uploadFromStream(new ByteArrayInputStream(file.get), fileName, contentType, file.size).map(filePath => {
+          Image(filePath, file.size, contentType)
+        })
       }
     }
 
-    private[service] def uploadImage(file: FileItem): Try[Image] = {
-      val extension = getFileExtension(file.name).getOrElse("")
-      val contentType = file.getContentType.getOrElse("")
-      val fileName = Stream.continually(randomFileName(extension)).dropWhile(imageStorage.objectExists).head
-
-      imageStorage.uploadFromStream(new ByteArrayInputStream(file.get), fileName, contentType, file.size).map(filePath => {
-        Image(filePath, file.size, contentType)
-      })
+    def filenameToHashFilename(filename: String, hash: String): String = {
+      val extension = filename.lastIndexOf(".") match {
+        case index: Int if index > -1 => filename.substring(index + 1)
+        case _ => ""
+      }
+      s"$hash.$extension"
     }
 
-    private[service] def randomFileName(extension: String, length: Int = 12): String = {
-      val extensionWithDot = if (extension.head == '.') extension else s".$extension"
-      val randomString = Random.alphanumeric.take(max(length - extensionWithDot.length, 1)).mkString
-      s"$randomString$extensionWithDot"
-    }
+    def md5Hash(bytes: Array[Byte]): String =
+      java.security.MessageDigest.getInstance("MD5").digest(bytes).map(0xFF & _).map {
+        "%02x".format(_)
+      }.foldLeft("") {
+        _ + _
+      }
 
   }
+
 }

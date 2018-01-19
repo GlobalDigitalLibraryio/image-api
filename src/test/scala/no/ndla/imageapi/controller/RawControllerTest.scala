@@ -39,7 +39,7 @@ class RawControllerTest extends UnitSuite with ScalatraSuite with TestEnvironmen
 
   test("That GET /image.jpg includes cache control headers if image was found") {
     get(s"/$imageName") {
-      response.headers.get("Cache-Control") should equal (Some(Seq("max-age=3600")))
+      response.headers.get("Cache-Control") should equal (Some(Seq("public, max-age=31536000")))
     }
   }
 
@@ -104,9 +104,9 @@ class RawControllerTest extends UnitSuite with ScalatraSuite with TestEnvironmen
     }
   }
 
-  test("That GET /id/1 includes cache control headers if image was found") {
+  test("That GET /id/1 does not includes cache control headers for found image") {
     get(s"/id/$id") {
-      response.headers.get("Cache-Control") should equal (Some(Seq("max-age=3600")))
+      response.headers.get("Cache-Control") should not be defined
     }
   }
 
