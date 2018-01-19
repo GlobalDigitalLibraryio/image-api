@@ -8,18 +8,17 @@
 
 package no.ndla.imageapi.controller
 
-import no.ndla.imageapi.model.S3UploadException
 import no.ndla.imageapi.model.api.Error
 import no.ndla.imageapi.repository.ImageRepository
+import no.ndla.imageapi.service.ConverterService
 import no.ndla.imageapi.service.search.{IndexBuilderService, IndexService}
-import no.ndla.imageapi.service.{ConverterService, ImportService}
 import org.json4s.{DefaultFormats, Formats}
-import org.scalatra.{GatewayTimeout, InternalServerError, NotFound, Ok}
+import org.scalatra.{InternalServerError, NotFound, Ok}
 
 import scala.util.{Failure, Success}
 
 trait InternController {
-  this: ImageRepository with ImportService with ConverterService with IndexBuilderService with IndexService =>
+  this: ImageRepository with ConverterService with IndexBuilderService with IndexService =>
   val internController: InternController
 
   class InternController extends NdlaController {
@@ -68,26 +67,6 @@ trait InternController {
       }
     }
 
-    post("/import/:image_id") {
-      val start = System.currentTimeMillis
-      val imageId = params("image_id")
-
-      importService.importImage(imageId) match {
-        case Success(imageMeta) => {
-          Ok(converterService.asApiImageMetaInformationWithDomainUrl(imageMeta))
-        }
-        case Failure(s: S3UploadException) => {
-          val errMsg = s"Import of node with external_id $imageId failed after ${System.currentTimeMillis - start} ms with error: ${s.getMessage}\n"
-          logger.warn(errMsg, s)
-          GatewayTimeout(body = Error(Error.GATEWAY_TIMEOUT, errMsg))
-        }
-        case Failure(ex: Throwable) => {
-          val errMsg = s"Import of node with external_id $imageId failed after ${System.currentTimeMillis - start} ms with error: ${ex.getMessage}\n"
-          logger.warn(errMsg, ex)
-          InternalServerError(body = errMsg)
-        }
-      }
-    }
   }
 
 }
