@@ -10,20 +10,18 @@ package no.ndla.imageapi.controller
 
 import no.ndla.imageapi.ImageApiProperties.{MaxImageFileSizeBytes, RoleWithWriteAccess}
 import no.ndla.imageapi.auth.Role
-import no.ndla.imageapi.model.{ValidationException, ValidationMessage}
 import no.ndla.imageapi.model.api.{Error, ImageMetaInformation, NewImageMetaInformation, SearchParams, SearchResult, ValidationError}
-import no.ndla.imageapi.model.Language.AllLanguages
+import no.ndla.imageapi.model.{ValidationException, ValidationMessage}
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.search.SearchService
 import no.ndla.imageapi.service.{ConverterService, WriteService}
-import org.json4s.native.Serialization.read
 import org.json4s.{DefaultFormats, Formats}
 import org.postgresql.util.PSQLException
 import org.scalatra.servlet.{FileUploadSupport, MultipartConfig}
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger._
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 trait ImageController {
   this: ImageRepository with SearchService with ConverterService with WriteService with Role =>
@@ -154,12 +152,27 @@ trait ImageController {
 
       val file = fileParams.getOrElse("file", throw new ValidationException(errors = Seq(ValidationMessage("file", "The request must contain an image file"))))
 
+      if (!filenameHasExtension(file.name)) {
+        throw new ValidationException(errors = Seq(ValidationMessage("file", "Filename has an invalid extension")))
+      }
+
       writeService.storeNewImage(newImage, file).map(converterService.asApiImageMetaInformationWithApplicationUrl) match {
         case Success(imageMeta) => imageMeta
         case Failure(e) => e match {
           case _: PSQLException if e.getMessage.contains("duplicate key value violates unique constraint") =>
               halt(status = 409, body = s"Image with external id '${newImage.externalId.getOrElse("")}' already exists.")
           case _ => errorHandler(e)
+        }
+      }
+    }
+
+    def filenameHasExtension(filename: String): Boolean = {
+      if (filename.endsWith(".")) {
+        false
+      } else {
+        filename.split('.').toList.reverse match {
+          case extension :: _ :: Nil if extension.length >= 3 => true
+          case _ => false
         }
       }
     }

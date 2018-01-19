@@ -95,6 +95,21 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
     }
   }
 
+  test("That POST / returns 400 if filename lacks proper extension") {
+    def assert400(filename: String) = {
+      post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile.copy(fileName = filename)), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+        status should equal (400)
+      }
+    }
+    assert400("filename")
+    assert400("filename.")
+    assert400("filename.j")
+    assert400("filename.jp")
+    assert400("filename.jpg.")
+    assert400("filename.jpg.p")
+    assert400("filename.jpg.pn")
+  }
+
   test("That POST / returns 403 if no auth-header") {
     post("/", Map("metadata" -> sampleNewImageMeta)) {
       status should equal (403)
