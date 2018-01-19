@@ -8,14 +8,14 @@
 
 package no.ndla.imageapi.service
 
-import java.io.InputStream
+import java.io.{BufferedInputStream, InputStream}
 import javax.servlet.http.HttpServletRequest
 
+import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.model.ValidationException
 import no.ndla.imageapi.model.api._
 import no.ndla.imageapi.model.domain.{Image, ImageMetaInformation}
-import no.ndla.imageapi.{TestEnvironment, UnitSuite}
-import io.digitallibrary.network.ApplicationUrl
+import no.ndla.imageapi.{TestData, TestEnvironment, UnitSuite}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -57,18 +57,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     reset(imageRepository, indexService, imageStorage)
     when(imageRepository.insert(any[ImageMetaInformation], any[Option[String]])(any[DBSession])).thenReturn(domainImageMeta.copy(id=Some(1)))
-  }
-
-  test("randomFileName should return a random filename with a given length and extension") {
-    val extension = ".jpg"
-
-    val result = writeService.randomFileName(extension)
-    result.length should be (12)
-    result.endsWith(extension) should be (true)
-
-    val resultWithNegativeLength = writeService.randomFileName(extension, -1)
-    resultWithNegativeLength.length should be (1 + extension.length)
-    resultWithNegativeLength.endsWith(extension) should be (true)
   }
 
   test("uploadFile should return Success if file upload succeeds") {
@@ -142,15 +130,10 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     verify(indexService, times(1)).indexDocument(any[ImageMetaInformation])
   }
 
-  test("getFileExtension returns the extension") {
-    writeService.getFileExtension("image.jpg") should equal(Some(".jpg"))
-    writeService.getFileExtension("ima.ge.jpg") should equal(Some(".jpg"))
-    writeService.getFileExtension(".jpeg") should equal(Some(".jpeg"))
-  }
-
-  test("getFileExtension returns None if no extension was found") {
-    writeService.getFileExtension("image-jpg") should equal(None)
-    writeService.getFileExtension("jpeg") should equal(None)
+  test("filenameToHashFilename returns a filename with the right extension") {
+    writeService.filenameToHashFilename("image.jpg", "abcd") should equal("abcd.jpg")
+    writeService.filenameToHashFilename("ima.ge.jpg", "abcd") should equal("abcd.jpg")
+    writeService.filenameToHashFilename(".jpg", "abcd") should equal("abcd.jpg")
   }
 
   test("converter to domain should set updatedBy from authUser and updated date"){
@@ -159,6 +142,12 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val domain = converterService.asDomainImageMetaInformation(newImageMeta, Image(newFileName, 1024, "image/jpeg"))
     domain.updatedBy should equal ("ndla54321")
     domain.updated should equal(updated())
+  }
+
+  test("MD5 hashing works as expected") {
+    val bis = new BufferedInputStream(TestData.NdlaLogoImage.stream)
+    val bytes = Stream.continually(bis.read).takeWhile(p => p != -1).map(_.toByte).toArray
+    writeService.md5Hash(bytes) should equal ("d8a1cf806a7ebf443fa161e274ad8706")
   }
 
 }
