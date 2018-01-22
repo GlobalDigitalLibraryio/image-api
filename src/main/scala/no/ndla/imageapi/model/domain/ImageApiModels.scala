@@ -10,16 +10,18 @@ package no.ndla.imageapi.model.domain
 
 import java.util.Date
 
+import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.ImageApiProperties
+import no.ndla.imageapi.controller.LanguageTagSerializer
 import org.json4s.FieldSerializer
 import org.json4s.FieldSerializer._
 import org.json4s.native.Serialization._
 import scalikejdbc._
 
-case class ImageTitle(title: String, language: String) extends LanguageField[String] { override def value: String = title }
-case class ImageAltText(alttext: String, language: String) extends LanguageField[String] { override def value: String = alttext }
-case class ImageCaption(caption: String, language: String) extends LanguageField[String] { override def value: String = caption }
-case class ImageTag(tags: Seq[String], language: String) extends LanguageField[Seq[String]] { override def value: Seq[String] = tags }
+case class ImageTitle(title: String, language: LanguageTag) extends LanguageField[String] { override def value: String = title }
+case class ImageAltText(alttext: String, language: LanguageTag) extends LanguageField[String] { override def value: String = alttext }
+case class ImageCaption(caption: String, language: LanguageTag) extends LanguageField[String] { override def value: String = caption }
+case class ImageTag(tags: Seq[String], language: LanguageTag) extends LanguageField[Seq[String]] { override def value: Seq[String] = tags }
 case class Image(fileName: String, size: Long, contentType: String)
 case class Copyright(license: License, origin: String, authors: Seq[Author])
 case class License(license: String, description: String, url: Option[String])
@@ -39,7 +41,7 @@ case class ImageMetaInformation(
 )
 
 object ImageMetaInformation extends SQLSyntaxSupport[ImageMetaInformation] {
-  implicit val formats = org.json4s.DefaultFormats
+  implicit val formats = org.json4s.DefaultFormats + new LanguageTagSerializer
   override val tableName = "imagemetadata"
   override val schemaName = Some(ImageApiProperties.MetaSchema)
   val JSonSerializer = FieldSerializer[ImageMetaInformation](ignore("id"))

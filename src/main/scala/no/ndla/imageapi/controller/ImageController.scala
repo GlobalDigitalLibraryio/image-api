@@ -30,7 +30,7 @@ trait ImageController {
   class ImageController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport with FileUploadSupport {
     // Swagger-stuff
     protected val applicationDescription = "API for accessing images from digitallibrary.io."
-    protected implicit override val jsonFormats: Formats = DefaultFormats
+    protected implicit override val jsonFormats: Formats = DefaultFormats + new LanguageTagSerializer
 
     // Additional models used in error responses
     registerModel[ValidationError]()
@@ -52,7 +52,7 @@ trait ImageController {
         headerParam[Option[String]]("app-key").description("Your app-key. May be omitted to access api anonymously, but rate limiting may apply on anonymous access."),
         queryParam[Option[String]]("query").description("Return only images with titles, alt-texts or tags matching the specified query."),
         queryParam[Option[String]]("minimum-size").description("Return only images with full size larger than submitted value in bytes."),
-        queryParam[Option[String]]("language").description("The ISO 639-1 language code describing language used in query-params."),
+        queryParam[Option[String]]("language").description("The BCP-47 language code describing language used in query-params."),
         queryParam[Option[String]]("license").description("Return only images with provided license."),
         queryParam[Option[Int]]("page").description("The page number of the search hits to display."),
         queryParam[Option[Int]]("page-size").description("The number of search hits to display for each page.")

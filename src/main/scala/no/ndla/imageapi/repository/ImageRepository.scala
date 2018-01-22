@@ -9,6 +9,7 @@
 package no.ndla.imageapi.repository
 
 import com.typesafe.scalalogging.LazyLogging
+import no.ndla.imageapi.controller.LanguageTagSerializer
 import no.ndla.imageapi.integration.DataSource
 import no.ndla.imageapi.model.domain.ImageMetaInformation
 import no.ndla.imageapi.service.ConverterService
@@ -22,7 +23,7 @@ trait ImageRepository {
   val imageRepository: ImageRepository
 
   class ImageRepository extends LazyLogging {
-    implicit val formats = org.json4s.DefaultFormats + ImageMetaInformation.JSonSerializer
+    implicit val formats = org.json4s.DefaultFormats + ImageMetaInformation.JSonSerializer + new LanguageTagSerializer
 
     ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
 

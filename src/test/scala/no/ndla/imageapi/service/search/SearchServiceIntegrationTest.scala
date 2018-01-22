@@ -9,6 +9,7 @@ package no.ndla.imageapi.service.search
 
 import javax.servlet.http.HttpServletRequest
 
+import io.digitallibrary.language.model.LanguageTag
 import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.ImageApiProperties.{DefaultPageSize, MaxPageSize}
 import no.ndla.imageapi.integration.JestClientFactory
@@ -32,6 +33,8 @@ class SearchServiceIntegrationTest extends UnitSuite with TestEnvironment {
 
   val getStartAtAndNumResults = PrivateMethod[(Int, Int)]('getStartAtAndNumResults)
 
+  val nb = LanguageTag("nb")
+
   val largeImage = Image("large-full-url", 10000, "jpg")
   val smallImage = Image("small-full-url", 100, "jpg")
 
@@ -39,10 +42,9 @@ class SearchServiceIntegrationTest extends UnitSuite with TestEnvironment {
   val publicDomain = Copyright(License("publicdomain", "Public Domain", None), "Metropolis", List(Author("Forfatter", "Bruce Wayne")))
   val updated = new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC).toDate
 
-  val image1 = ImageMetaInformation(Some(1), List(ImageTitle("Batmen er på vift med en bil", "nb")), List(ImageAltText("Bilde av en bil flaggermusmann som vifter med vingene bil.", "nb")), largeImage.fileName, largeImage.size, largeImage.contentType, byNcSa, List(ImageTag(List("fugl"), "nb")), List(), "ndla124", updated)
-  val image2 = ImageMetaInformation(Some(2), List(ImageTitle("Pingvinen er ute og går", "nb")), List(ImageAltText("Bilde av en en pingvin som vagger borover en gate.", "nb")), largeImage.fileName, largeImage.size, largeImage.contentType, publicDomain, List(ImageTag(List("fugl"), "nb")), List(), "ndla124", updated)
-  val image3 = ImageMetaInformation(Some(3), List(ImageTitle("Donald Duck kjører bil", "nb")), List(ImageAltText("Bilde av en en and som kjører en rød bil.", "nb")), smallImage.fileName, smallImage.size, smallImage.contentType, byNcSa, List(ImageTag(List("and"), "nb")), List(), "ndla124", updated)
-  val image4 = ImageMetaInformation(Some(4), List(ImageTitle("Hulken er ute og lukter på blomstene", "unknown")), Seq(), smallImage.fileName, smallImage.size, smallImage.contentType, byNcSa, Seq(), Seq(), "ndla124", updated)
+  val image1 = ImageMetaInformation(Some(1), List(ImageTitle("Batmen er på vift med en bil", nb)), List(ImageAltText("Bilde av en bil flaggermusmann som vifter med vingene bil.", nb)), largeImage.fileName, largeImage.size, largeImage.contentType, byNcSa, List(ImageTag(List("fugl"), nb)), List(), "ndla124", updated)
+  val image2 = ImageMetaInformation(Some(2), List(ImageTitle("Pingvinen er ute og går", nb)), List(ImageAltText("Bilde av en en pingvin som vagger borover en gate.", nb)), largeImage.fileName, largeImage.size, largeImage.contentType, publicDomain, List(ImageTag(List("fugl"), nb)), List(), "ndla124", updated)
+  val image3 = ImageMetaInformation(Some(3), List(ImageTitle("Donald Duck kjører bil", nb)), List(ImageAltText("Bilde av en en and som kjører en rød bil.", nb)), smallImage.fileName, smallImage.size, smallImage.contentType, byNcSa, List(ImageTag(List("and"), nb)), List(), "ndla124", updated)
 
   override def beforeAll() = {
     indexService.createIndexWithName(ImageApiProperties.SearchIndex)
@@ -50,7 +52,6 @@ class SearchServiceIntegrationTest extends UnitSuite with TestEnvironment {
     indexService.indexDocument(image1)
     indexService.indexDocument(image2)
     indexService.indexDocument(image3)
-    indexService.indexDocument(image4)
 
     val servletRequest = mock[HttpServletRequest]
     when(servletRequest.getHeader(any[String])).thenReturn("http")
