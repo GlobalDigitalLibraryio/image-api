@@ -8,54 +8,43 @@
 
 package no.ndla.imageapi.controller
 
+import com.typesafe.scalalogging.LazyLogging
 import no.ndla.imageapi.ImageApiProperties
-import no.ndla.imageapi.model.api.{ImageMetaSummary, SearchResult}
-import org.json4s._
-import org.json4s.native.JsonParser
 import org.scalatra._
 
-import scalaj.http.{Http, HttpResponse}
-import com.netaporter.uri.dsl._
+import scala.util.{Failure, Success, Try}
+import scalaj.http.Http
+
 
 trait HealthController {
   val healthController: HealthController
 
-  class HealthController extends ScalatraServlet {
+  class HealthController extends ScalatraServlet with LazyLogging {
 
-    implicit val formats = DefaultFormats
+    def checker = new CheckThatEndpointResponds
 
-    def getApiResponse(url: String): HttpResponse[String] = {
-      Http(url).execute()
-    }
-
-    def getImageUrl(body: String): (Option[String], Long) = {
-      def localInstanceImageUrl(cloudfrontUrl: String) = {
-        s"http://0.0.0.0${ImageApiProperties.ImageApiBasePath}/raw/${cloudfrontUrl.pathParts.last.part}"
-      }
-      val json = JsonParser.parse(body).extract[SearchResult]
-      json.results.headOption match {
-        case Some(result: ImageMetaSummary) => (Some(localInstanceImageUrl(result.previewUrl)), json.totalCount)
-        case _ => (None,json.totalCount)
-      }
-    }
-
-    def getReturnCode(imageResponse: HttpResponse[String]): ActionResult = {
-      imageResponse.code match {
-        case 200 => Ok()
-        case _ => InternalServerError()
-      }
-    }
+    val endpointsToCheck = Seq(
+      s"http://0.0.0.0:${ImageApiProperties.ApplicationPort}${ImageApiProperties.ImageApiBasePath}/v1/images/",
+      s"http://0.0.0.0:${ImageApiProperties.ApplicationPort}${ImageApiProperties.ImageApiBasePath}/v2/images/",
+    )
 
     get("/") {
-      val apiSearchResponse = getApiResponse(
-        s"http://0.0.0.0:${ImageApiProperties.ApplicationPort}${ImageApiProperties.ImageApiBasePath}/v2/images/")
-      val (imageUrl,totalCount) = getImageUrl(apiSearchResponse.body)
-
-      apiSearchResponse.code match {
-        case _ if totalCount == 0 => Ok()
-        case 200 => getReturnCode(getApiResponse(imageUrl.get))
-        case _ => InternalServerError()
+      val allEndpointsResponds = endpointsToCheck.toStream.map(checker.responds(_)).takeWhile(_ == true).length == endpointsToCheck.length
+      if (allEndpointsResponds) {
+        Ok()
+      } else {
+        InternalServerError()
       }
+    }
+  }
+
+}
+
+class CheckThatEndpointResponds extends LazyLogging {
+  def responds(url: String): Boolean = {
+    Try(Http(url).execute()) match {
+      case Success(_) => true
+      case Failure(_) => false
     }
   }
 }
