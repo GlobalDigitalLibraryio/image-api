@@ -15,7 +15,6 @@ import no.ndla.imageapi.model.{ValidationException, ValidationMessage}
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.search.SearchService
 import no.ndla.imageapi.service.{ConverterService, WriteService}
-import org.json4s.{DefaultFormats, Formats}
 import org.postgresql.util.PSQLException
 import org.scalatra.servlet.{FileUploadSupport, MultipartConfig}
 import org.scalatra.swagger.DataType.ValueDataType
@@ -30,7 +29,6 @@ trait ImageController {
   class ImageController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport with FileUploadSupport {
     // Swagger-stuff
     protected val applicationDescription = "API for accessing images from digitallibrary.io."
-    protected implicit override val jsonFormats: Formats = DefaultFormats + new LanguageTagSerializer
 
     // Additional models used in error responses
     registerModel[ValidationError]()
