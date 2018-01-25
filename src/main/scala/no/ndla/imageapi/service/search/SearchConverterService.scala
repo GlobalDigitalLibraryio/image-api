@@ -24,24 +24,23 @@ trait SearchConverterService {
     def asSearchableImage(image: ImageMetaInformation): SearchableImage = {
       SearchableImage(
         id = image.id.get,
-        titles = SearchableLanguageValues(image.titles.map(title => LanguageValue(title.language.toString, title.title))),
-        alttexts = SearchableLanguageValues(image.alttexts.map(alttext => LanguageValue(alttext.language.toString, alttext.alttext))),
-        captions = SearchableLanguageValues(image.captions.map(caption => LanguageValue(caption.language.toString, caption.caption))),
-        tags = SearchableLanguageList(image.tags.map(tag => LanguageValue(tag.language.toString, tag.tags))),
+        titles = SearchableLanguageValues(image.titles.map(title => LanguageValue(title.language, title.title))),
+        alttexts = SearchableLanguageValues(image.alttexts.map(alttext => LanguageValue(alttext.language, alttext.alttext))),
+        captions = SearchableLanguageValues(image.captions.map(caption => LanguageValue(caption.language, caption.caption))),
+        tags = SearchableLanguageList(image.tags.map(tag => LanguageValue(tag.language, tag.tags))),
         license = image.copyright.license.license,
         imageSize = image.size,
         previewUrl = parse(image.imageUrl).toString)
     }
 
-    def asImageMetaSummary(searchableImage: SearchableImage, language: Option[String]): ImageMetaSummary = {
-      val apiToRawRegex = "/v\\d+/images/".r
+    def asImageMetaSummary(searchableImage: SearchableImage, language: Option[LanguageTag]): ImageMetaSummary = {
       val title = searchableImage.titles.languageValues.find(title => title.lang == language.getOrElse(DefaultLanguage))
         .orElse(searchableImage.titles.languageValues.headOption)
-        .map(res => ImageTitle(res.value, LanguageTag(res.lang)))
+        .map(res => ImageTitle(res.value, res.lang))
         .getOrElse(ImageTitle("", DefaultLanguage))
       val altText = searchableImage.alttexts.languageValues.find(title => title.lang == language.getOrElse(DefaultLanguage))
         .orElse(searchableImage.alttexts.languageValues.headOption)
-        .map(res => ImageAltText(res.value, LanguageTag(res.lang)))
+        .map(res => ImageAltText(res.value, res.lang))
         .getOrElse(ImageAltText("", DefaultLanguage))
 
       ImageMetaSummary(

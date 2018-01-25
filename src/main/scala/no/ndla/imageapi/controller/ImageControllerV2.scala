@@ -20,7 +20,7 @@ import org.scalatra.servlet.{FileUploadSupport, MultipartConfig}
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger._
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait ImageControllerV2 {
   this: ImageRepository with SearchService with ConverterService with WriteService with Role =>
@@ -96,7 +96,7 @@ trait ImageControllerV2 {
 
     configureMultipartHandling(MultipartConfig(maxFileSize = Some(MaxImageFileSizeBytes)))
 
-    private def search(minimumSize: Option[Int], query: Option[String], language: Option[String], license: Option[String], pageSize: Option[Int], page: Option[Int]) = {
+    private def search(minimumSize: Option[Int], query: Option[String], language: Option[LanguageTag], license: Option[String], pageSize: Option[Int], page: Option[Int]) = {
       query match {
         case Some(searchString) => searchService.matchingQuery(
           query = searchString.trim,
@@ -113,7 +113,7 @@ trait ImageControllerV2 {
     get("/", operation(getImages)) {
       val minimumSize = intOrNone("minimum-size")
       val query = paramOrNone("query")
-      val language = paramOrNone("language")
+      val language = Try(paramOrNone("language").map(LanguageTag(_))).getOrElse(None)
       val license = params.get("license")
       val pageSize = intOrNone("page-size")
       val page = intOrNone("page")
@@ -125,7 +125,7 @@ trait ImageControllerV2 {
       val searchParams = extract[SearchParams](request.body)
       val minimumSize = searchParams.minimumSize
       val query = searchParams.query
-      val language = searchParams.language
+      val language = Try(searchParams.language.map(LanguageTag(_))).getOrElse(None)
       val license = searchParams.license
       val pageSize = searchParams.pageSize
       val page = searchParams.page

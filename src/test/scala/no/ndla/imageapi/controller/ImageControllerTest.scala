@@ -10,6 +10,7 @@ package no.ndla.imageapi.controller
 
 import java.util.Date
 
+import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.model.api.NewImageMetaInformation
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.{ImageSwagger, TestEnvironment, UnitSuite}
@@ -39,6 +40,10 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
   implicit val swagger = new ImageSwagger
   lazy val controller = new ImageController
   addServlet(controller, "/*")
+
+  override def beforeEach(): Unit = {
+    reset(searchService)
+  }
 
   case class PretendFile(content: Array[Byte], contentType: String, fileName: String) extends Uploadable {
     override def contentLength: Long = content.length
@@ -158,6 +163,34 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
     post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal (500)
     }
+  }
+
+  test("that GET /?language=eng parses language ok") {
+    get("/?language=eng") {
+      status should equal (200)
+    }
+    verify(searchService).all(None, None, Some(LanguageTag("eng")), None, None)
+  }
+
+  test("that GET /?language=x doesn't fail when language can't be parsed, but uses language=None") {
+    get("/?language=x") {
+      status should equal (200)
+    }
+    verify(searchService).all(None, None, None, None, None)
+  }
+
+  test("that POST /search parses language ok") {
+    post("/search/", """{"language": "eng"}""".getBytes) {
+      status should equal (200)
+    }
+    verify(searchService).all(None, None, Some(LanguageTag("eng")), None, None)
+  }
+
+  test("that POST /search doesn't fail when language can't be parsed, but uses language=None") {
+    post("/search/", """{"language": "x"}""".getBytes) {
+      status should equal (200)
+    }
+    verify(searchService).all(None, None, None, None, None)
   }
 
 }

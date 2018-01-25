@@ -8,6 +8,7 @@
 
 package no.ndla.imageapi.controller
 
+import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.ImageApiProperties.{MaxImageFileSizeBytes, RoleWithWriteAccess}
 import no.ndla.imageapi.auth.Role
 import no.ndla.imageapi.model.api.{Error, ImageMetaInformation, NewImageMetaInformation, SearchParams, SearchResult, ValidationError}
@@ -20,7 +21,7 @@ import org.scalatra.servlet.{FileUploadSupport, MultipartConfig}
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger._
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait ImageController {
   this: ImageRepository with SearchService with ConverterService with WriteService with Role =>
@@ -95,7 +96,7 @@ trait ImageController {
 
     configureMultipartHandling(MultipartConfig(maxFileSize = Some(MaxImageFileSizeBytes)))
 
-    private def search(minimumSize: Option[Int], query: Option[String], language: Option[String], license: Option[String], pageSize: Option[Int], page: Option[Int]) = {
+    private def search(minimumSize: Option[Int], query: Option[String], language: Option[LanguageTag], license: Option[String], pageSize: Option[Int], page: Option[Int]) = {
       query match {
         case Some(searchString) => searchService.matchingQuery(
           query = searchString.trim,
@@ -112,7 +113,7 @@ trait ImageController {
     get("/", operation(getImages)) {
       val minimumSize = intOrNone("minimum-size")
       val query = params.get("query")
-      val language = params.get("language")
+      val language = Try(params.get("language").map(LanguageTag(_))).getOrElse(None)
       val license = params.get("license")
       val pageSize = intOrNone("page-size")
       val page = intOrNone("page")
@@ -125,7 +126,7 @@ trait ImageController {
       val searchParams = extract[SearchParams](request.body)
       val minimumSize = searchParams.minimumSize
       val query = searchParams.query
-      val language = searchParams.language
+      val language = Try(searchParams.language.map(LanguageTag(_))).getOrElse(None)
       val license = searchParams.license
       val pageSize = searchParams.pageSize
       val page = searchParams.page

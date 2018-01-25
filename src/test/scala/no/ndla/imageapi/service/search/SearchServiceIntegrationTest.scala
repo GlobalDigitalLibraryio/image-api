@@ -145,14 +145,14 @@ class SearchServiceIntegrationTest extends UnitSuite with TestEnvironment {
   }
 
   test("That search matches title") {
-    val searchResult = searchService.matchingQuery("Pingvinen", None, Some("nb"), None, None, None)
+    val searchResult = searchService.matchingQuery("Pingvinen", None, Some(nb), None, None, None)
     searchResult.totalCount should be(1)
     searchResult.results.size should be(1)
     searchResult.results.head.id should be("2")
   }
 
   test("That search matches tags") {
-    val searchResult = searchService.matchingQuery("and", None, Some("nb"), None, None, None)
+    val searchResult = searchService.matchingQuery("and", None, Some(nb), None, None, None)
     searchResult.totalCount should be(1)
     searchResult.results.size should be(1)
     searchResult.results.head.id should be("3")
@@ -175,16 +175,16 @@ class SearchServiceIntegrationTest extends UnitSuite with TestEnvironment {
   }
 
   test("Searching with logical AND only returns results with all terms") {
-    val search1 = searchService.matchingQuery("batmen AND bil", None, Some("nb"), None, Some(1), Some(10))
+    val search1 = searchService.matchingQuery("batmen AND bil", None, Some(nb), None, Some(1), Some(10))
     search1.results.map(_.id) should equal (Seq("1", "3"))
 
-    val search2 = searchService.matchingQuery("batmen | pingvinen", None, Some("nb"), None, Some(1), Some(10))
+    val search2 = searchService.matchingQuery("batmen | pingvinen", None, Some(nb), None, Some(1), Some(10))
     search2.results.map(_.id) should equal (Seq("1", "2"))
 
-    val search3 = searchService.matchingQuery("bilde + -flaggermusmann", None, Some("nb"), None, Some(1), Some(10))
+    val search3 = searchService.matchingQuery("bilde + -flaggermusmann", None, Some(nb), None, Some(1), Some(10))
     search3.results.map(_.id) should equal (Seq("2", "3"))
 
-    val search4 = searchService.matchingQuery("batmen + bil", None, Some("nb"), None, Some(1), Some(10))
+    val search4 = searchService.matchingQuery("batmen + bil", None, Some(nb), None, Some(1), Some(10))
     search4.results.map(_.id) should equal (Seq("1"))
   }
 
