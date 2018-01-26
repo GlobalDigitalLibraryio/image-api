@@ -11,6 +11,7 @@ package no.ndla.imageapi.service
 import java.io.{BufferedInputStream, InputStream}
 import javax.servlet.http.HttpServletRequest
 
+import io.digitallibrary.language.model.LanguageTag
 import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.model.ValidationException
 import no.ndla.imageapi.model.api._
@@ -32,8 +33,8 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
   val newImageMeta = NewImageMetaInformation(
     None,
-    Seq(ImageTitle("title", "en")),
-    Seq(ImageAltText("alt text", "en")),
+    Seq(ImageTitle("title", LanguageTag("eng"))),
+    Seq(ImageAltText("alt text", LanguageTag("eng"))),
     Copyright(License("by", "", None), "", Seq.empty),
     None,
     None

@@ -22,7 +22,7 @@ trait HealthController {
 
   class HealthController extends ScalatraServlet {
 
-    implicit val formats = DefaultFormats
+    implicit val formats = DefaultFormats + new LanguageTagSerializer
 
     def getApiResponse(url: String): HttpResponse[String] = {
       Http(url).execute()

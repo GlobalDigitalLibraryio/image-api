@@ -9,6 +9,7 @@
 package no.ndla.imageapi
 
 import com.typesafe.scalalogging.LazyLogging
+import io.digitallibrary.language.model.LanguageTag
 import io.digitallibrary.network.Domains
 import io.digitallibrary.network.secrets.PropertyKeys
 import io.digitallibrary.network.secrets.Secrets.readSecrets
@@ -32,7 +33,7 @@ object ImageApiProperties extends LazyLogging {
   val ImageControllerPath = s"$ImageApiBasePath/v1/images"
   val RawControllerPath = s"$ImageApiBasePath/raw"
 
-  val DefaultLanguage = "nb"
+  val DefaultLanguage = LanguageTag("nob")
 
   val IsoMappingCacheAgeInMs = 1000 * 60 * 60 // 1 hour caching
   val LicenseMappingCacheAgeInMs = 1000 * 60 * 60 // 1 hour caching

@@ -23,7 +23,7 @@ trait InternController {
 
   class InternController extends NdlaController {
 
-    protected implicit override val jsonFormats: Formats = DefaultFormats
+    protected implicit override val jsonFormats: Formats = DefaultFormats + new LanguageTagSerializer
 
     post("/index") {
       indexBuilderService.indexDocuments match {

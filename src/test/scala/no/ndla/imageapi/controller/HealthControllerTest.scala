@@ -26,7 +26,7 @@ class HealthControllerTest extends UnitSuite with TestEnvironment with ScalatraF
                            |      "id": "1",
                            |      "title": {
                            |        "title": "Meterolog Kristian Trægde i 1986",
-                           |        "language": "unknown"
+                           |        "language": "nb"
                            |      },
                            |      "altText": {
                            |        "alttext": "",
@@ -43,7 +43,7 @@ class HealthControllerTest extends UnitSuite with TestEnvironment with ScalatraF
                           |	"metaUrl": "http://0.0.0.0/image-api/v2/images/1",
                           |	"title": {
                           |		"title": "Meterolog Kristian Trægde i 1986",
-                          |		"language": "unknown"
+                          |		"language": "nb"
                           |	},
                           |	"alttext": {
                           |		"alttext": "",
@@ -89,7 +89,6 @@ class HealthControllerTest extends UnitSuite with TestEnvironment with ScalatraF
                           |	"supportedLanguages": [
                           |		"nn",
                           |		"nb",
-                          |		"unknown",
                           |		"en"
                           |	]
                           |}""".stripMargin

@@ -15,6 +15,7 @@ import no.ndla.imageapi.model.Language._
 import no.ndla.imageapi.model.{api, domain}
 import io.digitallibrary.network.ApplicationUrl
 import com.netaporter.uri.Uri.parse
+import io.digitallibrary.language.model.LanguageTag
 
 trait ConverterService {
   this: User with Clock =>
@@ -73,19 +74,20 @@ trait ConverterService {
       )
     }
 
-    def asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: Option[String]): Option[api.ImageMetaInformationSingleLanguage] = {
+    def asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationSingleLanguage] = {
       asImageMetaInformationV2(domainImageMetaInformation, language, ApplicationUrl.get)
     }
 
-    def asApiImageMetaInformationWithDomainUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: Option[String]): Option[api.ImageMetaInformationSingleLanguage] = {
+    def asApiImageMetaInformationWithDomainUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationSingleLanguage] = {
       asImageMetaInformationV2(domainImageMetaInformation, language, ImageApiProperties.ImageApiUrlBase.replace("v1", "v2"))
     }
 
-    private def asImageMetaInformationV2(imageMeta: domain.ImageMetaInformation, language: Option[String], baseUrl: String): Option[api.ImageMetaInformationSingleLanguage] = {
-      val title = findByLanguageOrBestEffort(imageMeta.titles, language).map(asApiImageTitle).getOrElse(api.ImageTitle("", DefaultLanguage))
-      val alttext = findByLanguageOrBestEffort(imageMeta.alttexts, language).map(asApiImageAltText).getOrElse(api.ImageAltText("", DefaultLanguage))
-      val tags = findByLanguageOrBestEffort(imageMeta.tags, language).map(asApiImageTag).getOrElse(api.ImageTag(Seq(), DefaultLanguage))
-      val caption = findByLanguageOrBestEffort(imageMeta.captions, language).map(asApiCaption).getOrElse(api.ImageCaption("", DefaultLanguage))
+    private def asImageMetaInformationV2(imageMeta: domain.ImageMetaInformation, language: LanguageTag, baseUrl: String): Option[api.ImageMetaInformationSingleLanguage] = {
+      val defaultLanguage = DefaultLanguage
+      val title = findByLanguageOrBestEffort(imageMeta.titles, language).map(asApiImageTitle).getOrElse(api.ImageTitle("", defaultLanguage))
+      val alttext = findByLanguageOrBestEffort(imageMeta.alttexts, language).map(asApiImageAltText).getOrElse(api.ImageAltText("", defaultLanguage))
+      val tags = findByLanguageOrBestEffort(imageMeta.tags, language).map(asApiImageTag).getOrElse(api.ImageTag(Seq(), defaultLanguage))
+      val caption = findByLanguageOrBestEffort(imageMeta.captions, language).map(asApiCaption).getOrElse(api.ImageCaption("", defaultLanguage))
 
       Some(api.ImageMetaInformationSingleLanguage(
         imageMeta.id.get.toString,
@@ -164,13 +166,12 @@ trait ConverterService {
       domain.ImageCaption(caption.caption, caption.language)
     }
 
-    def getSupportedLanguages(domainImageMetaInformation: domain.ImageMetaInformation): Seq[String] = {
+    def getSupportedLanguages(domainImageMetaInformation: domain.ImageMetaInformation): Seq[LanguageTag] = {
       domainImageMetaInformation.titles.map(_.language)
         .++:(domainImageMetaInformation.alttexts.map(_.language))
         .++:(domainImageMetaInformation.tags.map(_.language))
         .++:(domainImageMetaInformation.captions.map(_.language))
         .distinct
-        .filterNot(lang => lang.isEmpty)
     }
 
   }
