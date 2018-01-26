@@ -82,7 +82,7 @@ case class V7_ImageAltText(alttext: String, language: Option[String])
 case class V7_ImageCaption(caption: String, language: Option[String])
 case class V7_ImageTag(tags: Seq[String], language: Option[String])
 case class V7_Image(fileName: String, size: Long, contentType: String)
-case class V7_Copyright(license: V7_License, origin: String, authors: Seq[V5_Author])
+case class V7_Copyright(license: V7_License, origin: String, authors: Seq[V7_Author])
 case class V7_License(license: String, description: String, url: Option[String])
 case class V7_Author(`type`: String, name: String)
 case class V7_ImageMetaInformation(id: Option[Long],
