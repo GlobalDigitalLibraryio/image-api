@@ -8,16 +8,16 @@
 package no.ndla.imageapi.model
 
 import com.sksamuel.elastic4s.analyzers._
+import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.model.domain.LanguageField
 
 object Language {
-  val DefaultLanguage = "eng"
+  val DefaultLanguage = LanguageTag("eng")
   val UnknownLanguage = "unknown"
   val AllLanguages = "all"
   val NoLanguage = ""
 
   val languageAnalyzers = Seq(
-    LanguageAnalyzer(DefaultLanguage, EnglishLanguageAnalyzer),
     LanguageAnalyzer("nob", NorwegianLanguageAnalyzer),
     LanguageAnalyzer("eng", EnglishLanguageAnalyzer),
     LanguageAnalyzer("fra", FrenchLanguageAnalyzer),
@@ -30,8 +30,8 @@ object Language {
 
   val supportedLanguages = languageAnalyzers.map(_.lang)
 
-  def findByLanguageOrBestEffort[P <: LanguageField[_]](sequence: Seq[P], lang: Option[String]): Option[P] = {
-    def findFirstLanguageMatching(sequence: Seq[P], lang: Seq[String]): Option[P] = {
+  def findByLanguageOrBestEffort[P <: LanguageField[_]](sequence: Seq[P], lang: LanguageTag): Option[P] = {
+    def findFirstLanguageMatching(sequence: Seq[P], lang: Seq[LanguageTag]): Option[P] = {
       lang match {
         case Nil => sequence.headOption
         case head :: tail =>
@@ -42,7 +42,7 @@ object Language {
       }
     }
 
-    findFirstLanguageMatching(sequence, lang.toList :+ DefaultLanguage)
+    findFirstLanguageMatching(sequence, Seq(lang, DefaultLanguage))
   }
 
   def languageOrUnknown(language: Option[String]): String = {

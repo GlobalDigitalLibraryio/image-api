@@ -8,6 +8,7 @@
 package no.ndla.imageapi.model.api
 
 
+import io.digitallibrary.language.model.LanguageTag
 import org.scalatra.swagger.annotations.{ApiModel, ApiModelProperty}
 
 import scala.annotation.meta.field
@@ -18,4 +19,4 @@ case class NewImageMetaInformationV2(@(ApiModelProperty@field)(description = "Ti
                                      @(ApiModelProperty@field)(description = "Describes the copyright information for the image") copyright: Copyright,
                                      @(ApiModelProperty@field)(description = "Searchable tags for the image") tags: Seq[String],
                                      @(ApiModelProperty@field)(description = "Caption for the image") caption: String,
-                                     @(ApiModelProperty@field)(description = "ISO 639-1 code that represents the language used in the caption") language: String)
+                                     @(ApiModelProperty@field)(description = "BCP-47 code that represents the language used in the caption") language: LanguageTag)

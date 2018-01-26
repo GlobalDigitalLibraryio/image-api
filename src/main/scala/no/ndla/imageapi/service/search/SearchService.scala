@@ -9,6 +9,7 @@ package no.ndla.imageapi.service.search
 
 import com.google.gson.JsonObject
 import com.typesafe.scalalogging.LazyLogging
+import io.digitallibrary.language.model.LanguageTag
 import io.searchbox.core.{Count, Search, SearchResult => JestSearchResult}
 import io.searchbox.params.Parameters
 import no.ndla.imageapi.ImageApiProperties
@@ -24,6 +25,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder
 import org.elasticsearch.search.sort.SortBuilders
 import org.json4s.native.Serialization.read
 import no.ndla.imageapi.model.api.Error
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -50,7 +52,7 @@ trait SearchService {
       }
     }
 
-    def getHits(response: JestSearchResult, language: Option[String]): Seq[ImageMetaSummary] = {
+    def getHits(response: JestSearchResult, language: Option[LanguageTag]): Seq[ImageMetaSummary] = {
       var resultList = Seq[ImageMetaSummary]()
       response.getTotal match {
         case count: Integer if count > 0 => {
@@ -65,13 +67,13 @@ trait SearchService {
       }
     }
 
-    def hitAsImageMetaSummary(hit: String, language: Option[String]): ImageMetaSummary = {
+    def hitAsImageMetaSummary(hit: String, language: Option[LanguageTag]): ImageMetaSummary = {
       implicit val formats = SearchableLanguageFormats.JSonFormats
       searchConverterService.asImageMetaSummary(read[SearchableImage](hit), language)
     }
 
-    private def languageSpecificSearch(searchField: String, language: Option[String], query: String, boost: Float): QueryBuilder = {
-      language match {
+    private def languageSpecificSearch(searchField: String, language: Option[LanguageTag], query: String, boost: Float): QueryBuilder = {
+      language.map(_.toString) match {
         case Some(lang) =>
           val searchQuery = QueryBuilders.simpleQueryStringQuery(query).field(s"$searchField.$lang")
           QueryBuilders.nestedQuery(searchField, searchQuery, ScoreMode.Avg).boost(boost)
@@ -83,7 +85,7 @@ trait SearchService {
       }
     }
 
-    def matchingQuery(query: String, minimumSize: Option[Int], language: Option[String], license: Option[String], page: Option[Int], pageSize: Option[Int]): SearchResult = {
+    def matchingQuery(query: String, minimumSize: Option[Int], language: Option[LanguageTag], license: Option[String], page: Option[Int], pageSize: Option[Int]): SearchResult = {
       val fullSearch = QueryBuilders.boolQuery()
         .must(QueryBuilders.boolQuery()
           .should(languageSpecificSearch("titles", language, query, 2))
@@ -94,10 +96,10 @@ trait SearchService {
       executeSearch(fullSearch, minimumSize, license, language, page, pageSize)
     }
 
-    def all(minimumSize: Option[Int], license: Option[String], language: Option[String], page: Option[Int], pageSize: Option[Int]): SearchResult =
+    def all(minimumSize: Option[Int], license: Option[String], language: Option[LanguageTag], page: Option[Int], pageSize: Option[Int]): SearchResult =
       executeSearch(QueryBuilders.boolQuery(), minimumSize, license, language, page, pageSize)
 
-    def executeSearch(queryBuilder: BoolQueryBuilder, minimumSize: Option[Int], license: Option[String], language: Option[String], page: Option[Int], pageSize: Option[Int]): SearchResult = {
+    def executeSearch(queryBuilder: BoolQueryBuilder, minimumSize: Option[Int], license: Option[String], language: Option[LanguageTag], page: Option[Int], pageSize: Option[Int]): SearchResult = {
       val licensedFiltered = license match {
         case None => queryBuilder.filter(noCopyright)
         case Some(lic) => queryBuilder.filter(QueryBuilders.termQuery("license", lic))

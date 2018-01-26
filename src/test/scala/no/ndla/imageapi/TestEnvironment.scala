@@ -12,7 +12,7 @@ package no.ndla.imageapi
 import com.amazonaws.services.s3.AmazonS3
 import io.digitallibrary.network.GdlClient
 import no.ndla.imageapi.auth.{Role, User}
-import no.ndla.imageapi.controller.{HealthController, ImageController, InternController, RawController}
+import no.ndla.imageapi.controller._
 import no.ndla.imageapi.integration._
 import no.ndla.imageapi.repository._
 import no.ndla.imageapi.service._
@@ -35,6 +35,7 @@ trait TestEnvironment
     with GdlClient
     with InternController
     with ImageController
+    with ImageControllerV2
     with RawController
     with HealthController
     with ImageConverter
@@ -55,6 +56,7 @@ trait TestEnvironment
 
   val gdlClient = mock[GdlClient]
   val imageController = mock[ImageController]
+  val imageControllerV2 = mock[ImageControllerV2]
   val rawController = mock[RawController]
   val internController = mock[InternController]
   val healthController = mock[HealthController]

@@ -7,7 +7,9 @@
 
 package no.ndla.imageapi.model.search
 
-case class LanguageValue[T](lang: String, value: T)
+import io.digitallibrary.language.model.LanguageTag
+
+case class LanguageValue[T](lang: LanguageTag, value: T)
 
 case class SearchableLanguageValues(languageValues: Seq[LanguageValue[String]])
 

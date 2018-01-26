@@ -1,5 +1,6 @@
 package no.ndla.imageapi.model.api
 
+import io.digitallibrary.language.model.LanguageTag
 import org.scalatra.swagger.annotations.ApiModel
 import org.scalatra.swagger.runtime.annotations.ApiModelProperty
 
@@ -16,4 +17,4 @@ case class ImageMetaInformationSingleLanguage(@(ApiModelProperty@field)(descript
                                               @(ApiModelProperty@field)(description = "Describes the copyright information for the image") copyright: Copyright,
                                               @(ApiModelProperty@field)(description = "Searchable tags for the image") tags: ImageTag,
                                               @(ApiModelProperty@field)(description = "Searchable caption for the image") caption: ImageCaption,
-                                              @(ApiModelProperty@field)(description = "Supported languages for the image title, alt-text, tags and caption.") supportedLanguages: Seq[String])
+                                              @(ApiModelProperty@field)(description = "Supported languages for the image title, alt-text, tags and caption.") supportedLanguages: Seq[LanguageTag])

@@ -8,11 +8,8 @@
 
 package no.ndla.imageapi.integration
 
-import java.io.ByteArrayInputStream
-import javax.imageio.ImageIO
-
 import com.amazonaws.AmazonServiceException
-import com.amazonaws.services.s3.model.{GetObjectRequest, ObjectMetadata, PutObjectRequest, S3Object}
+import com.amazonaws.services.s3.model.{GetObjectRequest, ObjectMetadata, S3Object}
 import no.ndla.imageapi.TestData.NdlaLogoImage
 import no.ndla.imageapi.{ImageApiProperties, TestData, TestEnvironment, UnitSuite}
 import org.mockito.Matchers._

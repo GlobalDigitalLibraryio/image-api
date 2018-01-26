@@ -2,7 +2,6 @@ package no.ndla.imageapi.service
 
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.model.{ValidationException, ValidationMessage}
-import no.ndla.mapping.ISO639.get6391CodeFor6392CodeMappings
 import no.ndla.mapping.License.getLicense
 import org.jsoup.Jsoup
 import org.jsoup.safety.Whitelist
@@ -46,18 +45,15 @@ trait ValidationService {
     }
 
     private def validateTitle(fieldPath: String, title: ImageTitle): Seq[ValidationMessage] = {
-      containsNoHtml(fieldPath, title.title).toList ++
-        validateLanguage(fieldPath, title.language)
+      containsNoHtml(fieldPath, title.title).toList
     }
 
     private def validateAltText(fieldPath: String, altText: ImageAltText): Seq[ValidationMessage] = {
-      containsNoHtml(fieldPath, altText.alttext).toList ++
-        validateLanguage(fieldPath, altText.language)
+      containsNoHtml(fieldPath, altText.alttext).toList
     }
 
     private def validateCaption(fieldPath: String, caption: ImageCaption): Seq[ValidationMessage] = {
-      containsNoHtml(fieldPath, caption.caption).toList ++
-        validateLanguage(fieldPath, caption.language)
+      containsNoHtml(fieldPath, caption.caption).toList
     }
 
     def validateCopyright(copyright: Copyright): Seq[ValidationMessage] = {
@@ -80,8 +76,7 @@ trait ValidationService {
 
     def validateTags(tags: Seq[ImageTag]): Seq[ValidationMessage] = {
       tags.flatMap(tagList => {
-        tagList.tags.flatMap(containsNoHtml("tags.tags", _)).toList :::
-          validateLanguage("tags.language", tagList.language).toList
+        tagList.tags.flatMap(containsNoHtml("tags.tags", _)).toList
       })
     }
 
@@ -92,21 +87,6 @@ trait ValidationService {
         Some(ValidationMessage(fieldPath, "The content contains illegal html-characters. No HTML is allowed"))
       }
     }
-
-    private def validateLanguage(fieldPath: String, languageCode: String): Option[ValidationMessage] = {
-      if (languageCodeIsValid(languageCode)) {
-        None
-      } else {
-        Some(ValidationMessage(fieldPath, s"Language '$languageCode' is not a supported value."))
-      }
-    }
-
-    private def languageCodeIsValid(languageCode: String): Boolean = {
-      val allLowerCase = languageCode.forall(_.isLower)
-      val lengthIsOk = languageCode.length == 3
-      allLowerCase && lengthIsOk
-    }
-
 
   }
 }
