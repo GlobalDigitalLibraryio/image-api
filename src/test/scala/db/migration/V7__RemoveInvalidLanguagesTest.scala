@@ -48,4 +48,17 @@ class V7__RemoveInvalidLanguagesTest extends UnitSuite with TestEnvironment {
     after.captions.forall(_.language.get == "eng") should be (true)
   }
 
+  test("no changes are made to valid languages") {
+    val before = V7_ImageMetaInformation(
+      Some(1),
+      Seq(V7_ImageTitle("Tittel", Some("eng")),
+        V7_ImageTitle("Title", Some("hin"))),
+      Seq(V7_ImageAltText("Alttext", Some("ben"))),
+      "", 0, "", null,
+      Seq(V7_ImageTag(Seq("Tag"), Some("eng"))),
+      Seq(V7_ImageCaption("Caption", Some("amh"))), "", null)
+
+    migration.updateImageLanguage(before) should equal (before)
+  }
+
 }
