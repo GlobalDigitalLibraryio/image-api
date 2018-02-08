@@ -37,7 +37,7 @@ trait IndexService {
       val source = write(searchConverterService.asSearchableImage(imageMetaInformation))
       esClient.execute(
         indexInto(ImageApiProperties.SearchIndex, ImageApiProperties.SearchDocument)
-          .id(imageMetaInformation.id.toString)
+          .id(imageMetaInformation.id.get.toString)
           .source(source)
       ) match {
         case Success(_) => Success(imageMetaInformation)
@@ -46,9 +46,9 @@ trait IndexService {
     }
 
     def indexDocuments(imageMetaList: List[domain.ImageMetaInformation], indexName: String): Try[Int] = {
+      val indexAndType = new IndexAndType(indexName, ImageApiProperties.SearchDocument)
       val actions: immutable.Seq[IndexDefinition] = for {imageMeta <- imageMetaList
-       source = write(searchConverterService.asSearchableImage(imageMeta))
-       indexAndType = new IndexAndType(indexName, ImageApiProperties.SearchDocument)
+        source = write(searchConverterService.asSearchableImage(imageMeta))
       } yield IndexDefinition(indexAndType, id = Some(imageMeta.id.get.toString), source = Some(source))
 
       esClient.execute(
