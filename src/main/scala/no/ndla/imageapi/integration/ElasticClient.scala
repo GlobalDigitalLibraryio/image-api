@@ -8,10 +8,9 @@
 
 package no.ndla.imageapi.integration
 
-import com.amazonaws.auth.DefaultAWSCredentialsProviderChain
 import com.amazonaws.regions.{Region, Regions}
 import com.sksamuel.elastic4s.ElasticsearchClientUri
-import com.sksamuel.elastic4s.aws.{Aws4ElasticClient, Aws4ElasticConfig}
+import com.sksamuel.elastic4s.aws.Aws4ElasticClient
 import com.sksamuel.elastic4s.http.{HttpClient, HttpExecutable, RequestSuccess}
 import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.model.GdlSearchException
@@ -54,9 +53,14 @@ object EsClientFactory {
 
   private def signingClient(searchServer: String): HttpClient = {
     val awsRegion = Option(Regions.getCurrentRegion).getOrElse(Region.getRegion(Regions.EU_CENTRAL_1)).toString
-    val provider = new DefaultAWSCredentialsProviderChain
-    val config = Aws4ElasticConfig(searchServer, provider.getCredentials.getAWSAccessKeyId, provider.getCredentials.getAWSSecretKey, awsRegion)
+    setEnv("AWS_DEFAULT_REGION", awsRegion)
+    Aws4ElasticClient(searchServer)
+  }
 
-    Aws4ElasticClient(config)
+  private def setEnv(key: String, value: String) = {
+    val field = System.getenv().getClass.getDeclaredField("m")
+    field.setAccessible(true)
+    val map = field.get(System.getenv()).asInstanceOf[java.util.Map[java.lang.String, java.lang.String]]
+    map.put(key, value)
   }
 }
