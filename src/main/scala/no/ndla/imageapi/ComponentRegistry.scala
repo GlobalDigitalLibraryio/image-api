@@ -90,7 +90,7 @@ object ComponentRegistry
   lazy val healthController = new HealthController
   lazy val resourcesApp = new ResourcesApp
   lazy val converterService = new ConverterService
-  lazy val jestClient = JestClientFactory.getClient()
+  lazy val esClient = EsClientFactory.getClient()
   lazy val searchConverterService = new SearchConverterService
 
   lazy val imageConverter = new ImageConverter

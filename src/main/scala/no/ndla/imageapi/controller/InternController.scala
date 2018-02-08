@@ -45,7 +45,7 @@ trait InternController {
         case Failure(f) => halt(status = 500, body = f.getMessage)
         case Success(indexes) => indexes.map(index => {
           logger.info(s"Deleting index $index")
-          indexService.deleteIndex(Option(index))
+          indexService.deleteSearchIndex(Option(index))
         })
       }
       val (errors, successes) = deleteResults.partition(_.isFailure)

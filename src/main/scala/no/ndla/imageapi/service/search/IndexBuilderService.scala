@@ -24,18 +24,18 @@ trait IndexBuilderService {
       for {
         _ <- indexService.aliasTarget.map {
           case Some(index) => Success(index)
-          case None => indexService.createIndex().map(newIndex => indexService.updateAliasTarget(None, newIndex))
+          case None => indexService.createSearchIndex().map(newIndex => indexService.updateAliasTarget(None, newIndex))
         }
         imported <- indexService.indexDocument(imported)
       } yield imported
     }
 
     def createEmptyIndex: Try[Option[String]] = {
-      indexService.createIndex().flatMap(indexName => {
+      indexService.createSearchIndex().flatMap(indexName => {
         for {
           aliasTarget <- indexService.aliasTarget
           _ <- indexService.updateAliasTarget(aliasTarget, indexName)
-          _ <- indexService.deleteIndex(aliasTarget)
+          _ <- indexService.deleteSearchIndex(aliasTarget)
         } yield (aliasTarget)
       })
     }
@@ -43,17 +43,17 @@ trait IndexBuilderService {
     def indexDocuments: Try[ReindexResult] = {
       synchronized {
         val start = System.currentTimeMillis()
-        indexService.createIndex().flatMap(indexName => {
+        indexService.createSearchIndex().flatMap(indexName => {
           val operations = for {
             numIndexed <- sendToElastic(indexName)
             aliasTarget <- indexService.aliasTarget
             _ <- indexService.updateAliasTarget(aliasTarget, indexName)
-            _ <- indexService.deleteIndex(aliasTarget)
+            _ <- indexService.deleteSearchIndex(aliasTarget)
           } yield numIndexed
 
           operations match {
             case Failure(f) => {
-              indexService.deleteIndex(Some(indexName))
+              indexService.deleteSearchIndex(Some(indexName))
               Failure(f)
             }
             case Success(totalIndexed) => {
