@@ -58,7 +58,7 @@ object ImageApiProperties extends LazyLogging {
   val DefaultPageSize: Int = 10
   val MaxPageSize: Int = 100
   val IndexBulkSize = 1000
-  val SearchServer = propOrElse("SEARCH_SERVER", "http://search-image-api.gdl-local")
+  val SearchServer = propOrElse("SEARCH_SERVER", "elasticsearch://search-image-api.gdl-local:80")
   val SearchRegion = propOrElse("SEARCH_REGION", "eu-central-1")
   val RunWithSignedSearchRequests = propOrElse("RUN_WITH_SIGNED_SEARCH_REQUESTS", "true").toBoolean
   val ElasticSearchIndexMaxResultWindow = 10000

@@ -7,24 +7,24 @@
 
 package no.ndla.imageapi.service.search
 
-import com.google.gson.JsonObject
+import com.sksamuel.elastic4s.http.ElasticDsl._
+import com.sksamuel.elastic4s.http.search.SearchHits
+import com.sksamuel.elastic4s.searches.ScoreMode
+import com.sksamuel.elastic4s.searches.queries._
+import com.sksamuel.elastic4s.searches.queries.term.TermQueryDefinition
+import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
+import com.sksamuel.elastic4s.{IndexAndTypes, Indexes}
 import com.typesafe.scalalogging.LazyLogging
 import io.digitallibrary.language.model.LanguageTag
-import io.searchbox.core.{Count, Search, SearchResult => JestSearchResult}
-import io.searchbox.params.Parameters
 import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.integration.ElasticClient
-import no.ndla.imageapi.model.api.{ImageMetaSummary, SearchResult}
+import no.ndla.imageapi.model.api.{Error, ImageMetaSummary, SearchResult}
 import no.ndla.imageapi.model.search.{SearchableImage, SearchableLanguageFormats}
-import no.ndla.imageapi.model.{Language, NdlaSearchException, ResultWindowTooLargeException}
-import org.apache.lucene.search.join.ScoreMode
+import no.ndla.imageapi.model.{GdlSearchException, Language, ResultWindowTooLargeException}
 import org.elasticsearch.ElasticsearchException
 import org.elasticsearch.index.IndexNotFoundException
-import org.elasticsearch.index.query._
-import org.elasticsearch.search.builder.SearchSourceBuilder
-import org.elasticsearch.search.sort.SortBuilders
+import org.json4s.Formats
 import org.json4s.native.Serialization.read
-import no.ndla.imageapi.model.api.Error
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -35,7 +35,7 @@ trait SearchService {
   val searchService: SearchService
 
   class SearchService extends LazyLogging {
-    private val noCopyright = QueryBuilders.boolQuery().mustNot(QueryBuilders.termQuery("license","copyrighted"))
+    private val noCopyright = BoolQueryDefinition().not(TermQueryDefinition("license","copyrighted"))
 
     def createEmptyIndexIfNoIndexesExist(): Unit = {
       val noIndexesExist = indexService.findAllIndexes().map(_.isEmpty).getOrElse(true)
@@ -52,42 +52,31 @@ trait SearchService {
       }
     }
 
-    def getHits(response: JestSearchResult, language: Option[LanguageTag]): Seq[ImageMetaSummary] = {
-      var resultList = Seq[ImageMetaSummary]()
-      response.getTotal match {
-        case count: Integer if count > 0 => {
-          val resultArray = response.getJsonObject.get("hits").asInstanceOf[JsonObject].get("hits").getAsJsonArray
-          val iterator = resultArray.iterator()
-          while(iterator.hasNext) {
-            resultList = resultList :+ hitAsImageMetaSummary(iterator.next().asInstanceOf[JsonObject].get("_source").toString, language)
-          }
-          resultList
-        }
-        case _ => Seq()
-      }
+    def getHits(hits: SearchHits, language: Option[LanguageTag]): Seq[ImageMetaSummary] = {
+      hits.hits.iterator.toSeq.map(hit => hitAsImageMetaSummary(hit.sourceAsString, language))
     }
 
     def hitAsImageMetaSummary(hit: String, language: Option[LanguageTag]): ImageMetaSummary = {
-      implicit val formats = SearchableLanguageFormats.JSonFormats
+      implicit val formats: Formats = SearchableLanguageFormats.JSonFormats
       searchConverterService.asImageMetaSummary(read[SearchableImage](hit), language)
     }
 
-    private def languageSpecificSearch(searchField: String, language: Option[LanguageTag], query: String, boost: Float): QueryBuilder = {
+    private def languageSpecificSearch(searchField: String, language: Option[LanguageTag], query: String, boost: Double): QueryDefinition = {
       language.map(_.toString) match {
         case Some(lang) =>
-          val searchQuery = QueryBuilders.simpleQueryStringQuery(query).field(s"$searchField.$lang")
-          QueryBuilders.nestedQuery(searchField, searchQuery, ScoreMode.Avg).boost(boost)
+          val searchQuery = SimpleStringQueryDefinition(query).field(s"$searchField.$lang")
+          NestedQueryDefinition(searchField, searchQuery, Some(ScoreMode.Avg)).boost(boost)
         case None =>
-          Language.supportedLanguages.foldLeft(QueryBuilders.boolQuery())((result, lang) => {
-            val searchQuery = QueryBuilders.simpleQueryStringQuery(query).field(s"$searchField.$lang")
-            result.should(QueryBuilders.nestedQuery(searchField, searchQuery, ScoreMode.Avg).boost(boost))
+          Language.supportedLanguages.foldLeft(BoolQueryDefinition())((result, lang) => {
+            val searchQuery = SimpleStringQueryDefinition(query).field(s"$searchField.$lang")
+            result.should(NestedQueryDefinition(searchField, searchQuery, Some(ScoreMode.Avg)).boost(boost))
           })
       }
     }
 
     def matchingQuery(query: String, minimumSize: Option[Int], language: Option[LanguageTag], license: Option[String], page: Option[Int], pageSize: Option[Int]): SearchResult = {
-      val fullSearch = QueryBuilders.boolQuery()
-        .must(QueryBuilders.boolQuery()
+      val fullSearch = BoolQueryDefinition()
+        .must(BoolQueryDefinition()
           .should(languageSpecificSearch("titles", language, query, 2))
           .should(languageSpecificSearch("alttexts", language, query, 1))
           .should(languageSpecificSearch("captions", language, query, 2))
@@ -97,45 +86,51 @@ trait SearchService {
     }
 
     def all(minimumSize: Option[Int], license: Option[String], language: Option[LanguageTag], page: Option[Int], pageSize: Option[Int]): SearchResult =
-      executeSearch(QueryBuilders.boolQuery(), minimumSize, license, language, page, pageSize)
+      executeSearch(BoolQueryDefinition(), minimumSize, license, language, page, pageSize)
 
-    def executeSearch(queryBuilder: BoolQueryBuilder, minimumSize: Option[Int], license: Option[String], language: Option[LanguageTag], page: Option[Int], pageSize: Option[Int]): SearchResult = {
+    def executeSearch(queryDefinition: BoolQueryDefinition, minimumSize: Option[Int], license: Option[String], language: Option[LanguageTag], page: Option[Int], pageSize: Option[Int]): SearchResult = {
       val licensedFiltered = license match {
-        case None => queryBuilder.filter(noCopyright)
-        case Some(lic) => queryBuilder.filter(QueryBuilders.termQuery("license", lic))
+        case None => queryDefinition.filter(noCopyright)
+        case Some(lic) => queryDefinition.filter(TermQueryDefinition("license", lic))
       }
 
       val sizeFiltered = minimumSize match {
         case None => licensedFiltered
-        case Some(size) => licensedFiltered.filter(QueryBuilders.rangeQuery("imageSize").gte(minimumSize.get))
+        case Some(_) => licensedFiltered.filter(RangeQuery("imageSize").gte(minimumSize.get))
       }
 
       val languageFiltered = language match {
         case None => sizeFiltered
-        case Some(lang) => sizeFiltered.filter(QueryBuilders.nestedQuery("titles", QueryBuilders.existsQuery(s"titles.$lang"), ScoreMode.Avg))
+        case Some(lang) => sizeFiltered.filter(NestedQueryDefinition("titles", ExistsQueryDefinition(s"titles.$lang"), Some(ScoreMode.Avg)))
       }
-
-      val search = new SearchSourceBuilder().query(languageFiltered).sort(SortBuilders.fieldSort("id"))
 
       val (startAt, numResults) = getStartAtAndNumResults(page, pageSize)
-      val request = new Search.Builder(search.toString).addIndex(ImageApiProperties.SearchIndex).setParameter(Parameters.SIZE, numResults).setParameter("from", startAt).build()
-
       val requestedResultWindow = page.getOrElse(1)*numResults
-      if(requestedResultWindow > ImageApiProperties.ElasticSearchIndexMaxResultWindow) {
-          logger.info(s"Max supported results are ${ImageApiProperties.ElasticSearchIndexMaxResultWindow}, user requested ${requestedResultWindow}")
-          throw new ResultWindowTooLargeException(Error.WindowTooLargeError.description)
-      }
 
-      jestClient.execute(request) match {
-        case Success(response) => SearchResult(response.getTotal.toLong, page.getOrElse(1), numResults, getHits(response, language))
-        case Failure(f) => errorHandler(Failure(f))
+      if(requestedResultWindow > ImageApiProperties.ElasticSearchIndexMaxResultWindow) {
+        logger.info(s"Max supported results are ${ImageApiProperties.ElasticSearchIndexMaxResultWindow}, user requested $requestedResultWindow")
+        throw new ResultWindowTooLargeException(Error.WindowTooLargeError.description)
+      }
+      val indexAndTypes = IndexAndTypes(ImageApiProperties.SearchIndex, ImageApiProperties.SearchDocument)
+
+      val search = searchWithType(indexAndTypes)
+        .bool(languageFiltered)
+        .size(numResults)
+        .from(startAt)
+        .sortBy(FieldSortDefinition("id"))
+
+      esClient.execute(
+        search
+      ) match {
+        case Success(response) => SearchResult(response.result.totalHits, page.getOrElse(1), numResults, getHits(response.result.hits, language))
+        case Failure(failure) => errorHandler(Failure(failure))
       }
     }
 
-    def countDocuments(): Int = {
-      val ret = jestClient.execute(
-        new Count.Builder().addIndex(ImageApiProperties.SearchIndex).build()
-      ).map(result => result.getCount.toInt)
+    def countDocuments(): Long = {
+      val ret = esClient.execute(
+        count(Indexes(ImageApiProperties.SearchIndex))
+      ).map(result => result.result.count)
       ret.getOrElse(0)
     }
 
@@ -156,25 +151,21 @@ trait SearchService {
 
     private def errorHandler[T](failure: Failure[T]) = {
       failure match {
-        case Failure(e: NdlaSearchException) => {
-          e.getResponse.getResponseCode match {
-            case notFound: Int if notFound == 404 => {
+        case Failure(e: GdlSearchException) =>
+          e.getFailure.status match {
+            case 404 =>
               logger.error(s"Index ${ImageApiProperties.SearchIndex} not found. Scheduling a reindex.")
               scheduleIndexDocuments()
               throw new IndexNotFoundException(s"Index ${ImageApiProperties.SearchIndex} not found. Scheduling a reindex")
-            }
-            case _ => {
-              logger.error(e.getResponse.getErrorMessage)
-              throw new ElasticsearchException(s"Unable to execute search in ${ImageApiProperties.SearchIndex}", e.getResponse.getErrorMessage)
-            }
+            case _ =>
+              logger.error(e.getFailure.error.reason)
+              throw new ElasticsearchException(s"Unable to execute search in ${ImageApiProperties.SearchIndex}", e.getFailure.error.reason)
           }
-
-        }
         case Failure(t: Throwable) => throw t
       }
     }
 
-    private def scheduleIndexDocuments() = {
+    private def scheduleIndexDocuments(): Unit = {
       val f = Future {
         indexBuilderService.indexDocuments
       }

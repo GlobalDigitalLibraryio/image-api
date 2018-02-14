@@ -62,7 +62,7 @@ trait TestEnvironment
   val healthController = mock[HealthController]
   val converterService = mock[ConverterService]
   val validationService = mock[ValidationService]
-  val jestClient = mock[NdlaJestClient]
+  val esClient = mock[E4sClient]
   val searchConverterService = mock[SearchConverterService]
   val imageConverter = mock[ImageConverter]
 

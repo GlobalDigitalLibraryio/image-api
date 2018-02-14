@@ -12,7 +12,7 @@ import javax.servlet.http.HttpServletRequest
 import io.digitallibrary.language.model.LanguageTag
 import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.ImageApiProperties.{DefaultPageSize, MaxPageSize}
-import no.ndla.imageapi.integration.JestClientFactory
+import no.ndla.imageapi.integration.EsClientFactory
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.{ImageApiProperties, TestEnvironment, UnitSuite}
 import no.ndla.tag.IntegrationTest
@@ -25,7 +25,7 @@ class SearchServiceIntegrationTest extends UnitSuite with TestEnvironment {
 
   val esPort = 9200
 
-  override val jestClient = JestClientFactory.getClient(searchServer = s"http://localhost:$esPort")
+  override val esClient = EsClientFactory.getClient(searchServer = s"elasticsearch://localhost:$esPort")
   override val searchConverterService = new SearchConverterService
   override val converterService = new ConverterService
   override val indexService = new IndexService
@@ -63,7 +63,7 @@ class SearchServiceIntegrationTest extends UnitSuite with TestEnvironment {
   }
 
   override def afterAll() = {
-    indexService.deleteIndex(Some(ImageApiProperties.SearchIndex))
+    indexService.deleteSearchIndex(Some(ImageApiProperties.SearchIndex))
   }
 
   test("That getStartAtAndNumResults returns default values for None-input") {
