@@ -118,10 +118,7 @@ trait IndexService {
         }
         esClient.execute(
           aliases(actions)
-        ) match {
-          case Failure(failure) => Failure(failure)
-          case Success(_) => Success()
-        }
+        )
       }
     }
 
@@ -134,10 +131,7 @@ trait IndexService {
           } else {
             esClient.execute(
               deleteIndex(indexName)
-            ) match {
-              case Failure(failure) => Failure(failure)
-              case Success(_) => Success()
-            }
+            )
           }
       }
     }

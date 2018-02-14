@@ -96,7 +96,7 @@ trait SearchService {
 
       val sizeFiltered = minimumSize match {
         case None => licensedFiltered
-        case Some(_) => licensedFiltered.filter(RangeQueryDefinition("imageSize").gte(minimumSize.get))
+        case Some(_) => licensedFiltered.filter(RangeQuery("imageSize").gte(minimumSize.get))
       }
 
       val languageFiltered = language match {
