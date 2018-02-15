@@ -27,7 +27,7 @@ case class E4sClient(httpClient: HttpClient) {
   def execute[T, U](request: T)(implicit exec: HttpExecutable[T, U]): Try[RequestSuccess[U]] = {
     val response = Await.ready(httpClient.execute {
       request
-    }, Duration.Inf).value.get
+    }, Duration(60, "s")).value.get
 
     response match {
       case Success(either) => either match {
