@@ -53,7 +53,7 @@ trait SearchService {
     }
 
     def getHits(hits: SearchHits, language: Option[LanguageTag]): Seq[ImageMetaSummary] = {
-      hits.hits.iterator.toSeq.map(hit => hitAsImageMetaSummary(hit.sourceAsString, language))
+      hits.hits.toSeq.map(hit => hitAsImageMetaSummary(hit.sourceAsString, language))
     }
 
     def hitAsImageMetaSummary(hit: String, language: Option[LanguageTag]): ImageMetaSummary = {
