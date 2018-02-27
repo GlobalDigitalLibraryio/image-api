@@ -94,6 +94,21 @@ trait ImageController {
         authorizations "oauth2"
         responseMessages(response400, response403, response413, response500))
 
+    val updateImage =
+      (apiOperation[ImageMetaInformation]("updateImage")
+        summary "Upload an updated image file with meta data"
+        notes "Upload an updated image file with meta data"
+        consumes "multipart/form-data"
+        parameters(
+        headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
+        headerParam[Option[String]]("app-key").description("Your app-key. May be omitted to access api anonymously, but rate limiting may apply on anonymous access."),
+        formParam[String]("metadata").description("The metadata for the image file to submit. See NewImageMetaInformation."),
+        pathParam[String]("image_id").description("Image_id of the image to be updated."),
+        Parameter(name = "file", `type` = ValueDataType("file"), description = Some("The image file(s) to upload"), paramType = ParamType.Form)
+      )
+        authorizations "oauth2"
+        responseMessages(response400, response403, response413, response500))
+
     configureMultipartHandling(MultipartConfig(maxFileSize = Some(MaxImageFileSizeBytes)))
 
     private def search(minimumSize: Option[Int], query: Option[String], language: Option[LanguageTag], license: Option[String], pageSize: Option[Int], page: Option[Int]) = {
@@ -139,6 +154,24 @@ trait ImageController {
       imageRepository.withId(imageId) match {
         case Some(image) => converterService.asApiImageMetaInformationWithApplicationUrl(image)
         case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"Image with id $imageId not found"))
+      }
+    }
+
+    put("/:image_id", operation(updateImage)) {
+      authRole.assertHasRole(RoleWithWriteAccess)
+      val imageId = long("image_id")
+      val updatedImage = params.get("metadata")
+        .map(extract[ImageMetaInformation])
+        .getOrElse(throw new ValidationException(errors = Seq(ValidationMessage("metadata", "The request must contain image metadata"))))
+      val file = fileParams.getOrElse("file", throw new ValidationException(errors = Seq(ValidationMessage("file", "The request must contain an image file"))))
+
+      if (!filenameHasExtension(file.name)) {
+        throw new ValidationException(errors = Seq(ValidationMessage("file", "Filename has an invalid extension")))
+      }
+
+      writeService.updateImage(converterService.asDomainImageMetaInformation(imageId, updatedImage, converterService.asDomainImage(file)), file) match {
+        case Success(imageMeta) => imageMeta
+        case Failure(e) => errorHandler(e)
       }
     }
 
