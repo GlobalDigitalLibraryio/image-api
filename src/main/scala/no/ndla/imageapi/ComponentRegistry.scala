@@ -12,6 +12,7 @@ import com.amazonaws.ClientConfiguration
 import com.amazonaws.client.builder.AwsClientBuilder
 import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
+import com.zaxxer.hikari.HikariDataSource
 import io.digitallibrary.network.GdlClient
 import no.ndla.imageapi.auth.{Role, User}
 import no.ndla.imageapi.controller._
@@ -19,7 +20,7 @@ import no.ndla.imageapi.integration._
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service._
 import no.ndla.imageapi.service.search.{IndexBuilderService, IndexService, SearchConverterService, SearchService}
-import org.postgresql.ds.PGPoolingDataSource
+import scalikejdbc.{ConnectionPool, DataSourceConnectionPool}
 
 object ComponentRegistry
   extends ElasticClient
@@ -47,15 +48,13 @@ object ComponentRegistry
 {
   implicit val swagger = new ImageSwagger
 
-  val dataSource = new PGPoolingDataSource()
-  dataSource.setUser(ImageApiProperties.MetaUserName)
+  lazy val dataSource = new HikariDataSource()
+  dataSource.setJdbcUrl(ImageApiProperties.DBConnectionUrl)
+  dataSource.setUsername(ImageApiProperties.MetaUserName)
   dataSource.setPassword(ImageApiProperties.MetaPassword)
-  dataSource.setDatabaseName(ImageApiProperties.MetaResource)
-  dataSource.setServerName(ImageApiProperties.MetaServer)
-  dataSource.setPortNumber(ImageApiProperties.MetaPort)
-  dataSource.setInitialConnections(ImageApiProperties.MetaInitialConnections)
-  dataSource.setMaxConnections(ImageApiProperties.MetaMaxConnections)
-  dataSource.setCurrentSchema(ImageApiProperties.MetaSchema)
+  dataSource.setMaximumPoolSize(ImageApiProperties.MetaMaxConnections)
+  dataSource.setSchema(ImageApiProperties.MetaSchema)
+  ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
 
   val amazonClient: AmazonS3 = {
     val commonClient = AmazonS3ClientBuilder

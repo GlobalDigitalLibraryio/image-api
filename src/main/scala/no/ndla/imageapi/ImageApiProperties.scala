@@ -40,7 +40,6 @@ object ImageApiProperties extends LazyLogging {
 
   val MaxImageFileSizeBytes = 1024 * 1024 * 40 // 40 MiB
 
-  val MetaInitialConnections = 3
   val MetaMaxConnections = 20
   val Environment = propOrElse("GDL_ENVIRONMENT", "local")
   val MetaUserName = prop(PropertyKeys.MetaUserNameKey)
@@ -49,6 +48,7 @@ object ImageApiProperties extends LazyLogging {
   val MetaServer = prop(PropertyKeys.MetaServerKey)
   val MetaPort = prop(PropertyKeys.MetaPortKey).toInt
   val MetaSchema = prop(PropertyKeys.MetaSchemaKey)
+  lazy val DBConnectionUrl = s"jdbc:postgresql://$MetaServer:$MetaPort/$MetaResource"
 
   val StorageName = s"$Environment.images.gdl"
   val CloudFrontUrl = getCloudFrontUrl(Environment)
