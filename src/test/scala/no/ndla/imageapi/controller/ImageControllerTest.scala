@@ -15,6 +15,7 @@ import no.ndla.imageapi.model.api.NewImageMetaInformation
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.{ImageSwagger, TestEnvironment, UnitSuite}
 import no.ndla.imageapi.ImageApiProperties.MaxImageFileSizeBytes
+import no.ndla.imageapi.model.api
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.postgresql.util.PSQLException
@@ -75,6 +76,39 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
       |    }
       |}
       |
+    """.stripMargin
+
+  val sampleUpdatedImageMetadata =
+    """
+      |{
+      |    "id": "123",
+      |    "metaUrl": "",
+      |    "titles": [{
+      |        "title": "Utedo, med et hjerte på døra",
+      |        "language": "nob"
+      |    }],
+      |    "alttexts": [{
+      |        "alttext": "En skeiv utedodør med et utskåret hjerte. Fotografi.",
+      |        "language": "nob"
+      |    }],
+      |    "imageUrl": "",
+      |    "size": 1000,
+      |    "contentType": "image/jpeg",
+      |    "copyright": {
+      |        "origin": "http://www.scanpix.no",
+      |        "authors": [],
+      |        "license": {
+      |            "description": "Creative Commons Attribution-ShareAlike 2.0 Generic",
+      |            "url": "https://creativecommons.org/licenses/by-sa/2.0/",
+      |            "license": "by-nc-sa"
+      |        }
+      |    },
+      |    "tags": [],
+      |    "captions": [{
+      |        "caption": "En caption",
+      |        "language": "nob"
+      |    }]
+      |}
     """.stripMargin
 
   test("That POST / returns 400 if parameters are missing") {
@@ -163,6 +197,16 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
     post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal (500)
     }
+  }
+
+  test("That PUT /123 updates image with id=123") {
+    when(converterService.asDomainImageMetaInformation(any[Long], any[api.ImageMetaInformation], any[Image])).thenReturn(mock[ImageMetaInformation])
+    when(converterService.asDomainImage(any[FileItem])).thenReturn(mock[Image])
+    when(writeService.updateImage(any[ImageMetaInformation], any[FileItem])).thenReturn(Success(mock[ImageMetaInformation]))
+    put("/123", Map("metadata" -> sampleUpdatedImageMetadata), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal (200)
+    }
+    verify(writeService).updateImage(any[ImageMetaInformation], any[FileItem])
   }
 
   test("that GET /?language=eng parses language ok") {

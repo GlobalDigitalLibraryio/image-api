@@ -17,6 +17,27 @@ trait WriteService {
   val writeService: WriteService
 
   class WriteService extends LazyLogging {
+
+    def updateImage(updatedImage: ImageMetaInformation, file: FileItem): Try[ImageMetaInformation] = {
+      validationService.validateImageFile(file) match {
+        case Some(validationMessage) => Failure(new ValidationException(errors = Seq(validationMessage)))
+        case _ =>
+      }
+
+      val uploadedImage = uploadImage(file) match {
+        case Failure(e) => return Failure(e)
+        case Success(image) => image
+      }
+
+      Try(imageRepository.update(updatedImage.copy(imageUrl = uploadedImage.fileName), updatedImage.id.get)) match {
+        case Success(meta) => Success(meta)
+        case Failure(e) =>
+          imageStorage.deleteObject(uploadedImage.fileName)
+          Failure(e)
+      }
+
+    }
+
     def storeNewImage(newImage: NewImageMetaInformation, file: FileItem): Try[ImageMetaInformation] = {
       validationService.validateImageFile(file) match {
         case Some(validationMessage) => return Failure(new ValidationException(errors = Seq(validationMessage)))

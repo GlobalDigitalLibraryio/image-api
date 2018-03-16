@@ -8,21 +8,22 @@
 
 package no.ndla.imageapi.service
 
+import com.netaporter.uri.Uri.parse
 import com.typesafe.scalalogging.LazyLogging
+import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.auth.User
 import no.ndla.imageapi.model.Language._
+import no.ndla.imageapi.model.domain.Image
 import no.ndla.imageapi.model.{api, domain}
-import io.digitallibrary.network.ApplicationUrl
-import com.netaporter.uri.Uri.parse
-import io.digitallibrary.language.model.LanguageTag
+import org.scalatra.servlet.FileItem
 
 trait ConverterService {
   this: User with Clock =>
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
-
 
     def asApiAuthor(domainAuthor: domain.Author): api.Author = {
       api.Author(domainAuthor.`type`, domainAuthor.name)
@@ -136,6 +137,26 @@ trait ConverterService {
         authUser.id(),
         clock.now()
       )
+    }
+
+    def asDomainImageMetaInformation(imageId: Long, imageMeta: api.ImageMetaInformation, image: domain.Image): domain.ImageMetaInformation = {
+      domain.ImageMetaInformation(
+        id = Some(imageId),
+        titles = imageMeta.titles.map(asDomainTitle),
+        alttexts = imageMeta.alttexts.map(asDomainAltText),
+        imageUrl = parse(image.fileName).toString,
+        size = image.size,
+        contentType = image.contentType,
+        copyright = toDomainCopyright(imageMeta.copyright),
+        tags = imageMeta.tags.map(toDomainTag),
+        captions = imageMeta.captions.map(toDomainCaption),
+        updatedBy = authUser.id(),
+        updated = clock.now()
+      )
+    }
+
+    def asDomainImage(fileItem: FileItem): Image = {
+      domain.Image(fileName = fileItem.name, size = fileItem.size, contentType = fileItem.contentType.getOrElse(""))
     }
 
     def asDomainTitle(title: api.ImageTitle): domain.ImageTitle = {
