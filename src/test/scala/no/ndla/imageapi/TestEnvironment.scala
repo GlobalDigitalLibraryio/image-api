@@ -34,7 +34,7 @@ trait TestEnvironment
     with IndexBuilderService
     with GdlClient
     with InternController
-    with ImageControllerV2
+    with ImageController
     with RawController
     with HealthController
     with ImageConverter
@@ -54,7 +54,7 @@ trait TestEnvironment
   val imageStorage = mock[AmazonImageStorageService]
 
   val gdlClient = mock[GdlClient]
-  val imageControllerV2 = mock[ImageControllerV2]
+  val imageController = mock[ImageController]
   val rawController = mock[RawController]
   val internController = mock[InternController]
   val healthController = mock[HealthController]

@@ -13,7 +13,7 @@ import no.ndla.imageapi.{ImageSwagger, TestEnvironment, UnitSuite}
 import org.mockito.Mockito._
 import org.scalatra.test.scalatest.ScalatraSuite
 
-class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnvironment {
+class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironment {
 
   // Use jwt.io to decode the jwt
   val jwtHeader = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9"
@@ -27,7 +27,7 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
   val authHeaderWithWrongRole = s"Bearer $jwtHeader.$jwtClaimsWrongRole.VxqM2bu2UF8IAalibIgdRdmsTDDWKEYpKzHPbCJcFzA"
 
   implicit val swagger = new ImageSwagger
-  lazy val controller = new ImageControllerV2
+  lazy val controller = new ImageController
   addServlet(controller, "/*")
 
   override def beforeEach(): Unit = {

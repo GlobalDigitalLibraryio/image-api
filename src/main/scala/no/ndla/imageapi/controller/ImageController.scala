@@ -22,11 +22,11 @@ import org.scalatra.swagger._
 
 import scala.util.{Failure, Success, Try}
 
-trait ImageControllerV2 {
+trait ImageController {
   this: ImageRepository with SearchService with ConverterService with WriteService with Role =>
-  val imageControllerV2: ImageControllerV2
+  val imageController: ImageController
 
-  class ImageControllerV2(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport with FileUploadSupport {
+  class ImageController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport with FileUploadSupport {
     // Swagger-stuff
     protected val applicationDescription = "API for accessing images from digitallibrary.io."
 

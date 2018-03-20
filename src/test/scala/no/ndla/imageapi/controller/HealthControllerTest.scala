@@ -16,7 +16,6 @@ class HealthControllerTest extends UnitSuite with TestEnvironment with ScalatraF
 
   val checkThatEndpointResponds: CheckThatEndpointResponds = mock[CheckThatEndpointResponds]
   val searchUrlV1 = "http://0.0.0.0:80/image-api/v1/images/"
-  val searchUrlV2 = "http://0.0.0.0:80/image-api/v2/images/"
 
   override def beforeEach(): Unit = reset(checkThatEndpointResponds)
 
@@ -27,23 +26,19 @@ class HealthControllerTest extends UnitSuite with TestEnvironment with ScalatraF
 
   test("that /health returns 200 as long as any response is received for all endpoints") {
     when(checkThatEndpointResponds.responds(searchUrlV1)).thenReturn(true)
-    when(checkThatEndpointResponds.responds(searchUrlV2)).thenReturn(true)
     get("/") {
       status should equal(200)
     }
     verify(checkThatEndpointResponds).responds(searchUrlV1)
-    verify(checkThatEndpointResponds).responds(searchUrlV2)
     verifyNoMoreInteractions(checkThatEndpointResponds)
   }
 
   test("that /health returns 500 if no response is received for at least one endpoint") {
-    when(checkThatEndpointResponds.responds(searchUrlV1)).thenReturn(true)
-    when(checkThatEndpointResponds.responds(searchUrlV2)).thenReturn(false)
+    when(checkThatEndpointResponds.responds(searchUrlV1)).thenReturn(false)
     get("/") {
       status should equal(500)
     }
     verify(checkThatEndpointResponds).responds(searchUrlV1)
-    verify(checkThatEndpointResponds).responds(searchUrlV2)
     verifyNoMoreInteractions(checkThatEndpointResponds)
   }
 

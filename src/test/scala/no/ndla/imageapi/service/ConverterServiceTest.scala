@@ -43,7 +43,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     when(request.getServerPort).thenReturn(80)
     when(request.getScheme).thenReturn("http")
     when(request.getServerName).thenReturn("image-api")
-    when(request.getServletPath).thenReturn("/v2/images")
+    when(request.getServletPath).thenReturn("/v1/images")
 
     ApplicationUrl.set(request)
   }
@@ -74,7 +74,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     setApplicationUrl()
 
     val api = converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(DefaultImageMetaInformation, english)
-    api.get.metaUrl should equal ("http://image-api/v2/images/1")
+    api.get.metaUrl should equal ("http://image-api/v1/images/1")
     api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
   }
 
@@ -82,7 +82,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     setApplicationUrl()
 
     val api = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(DefaultImageMetaInformation, english)
-    api.get.metaUrl should equal ("http://local.digitallibrary.io/image-api/v2/images/1")
+    api.get.metaUrl should equal ("http://local.digitallibrary.io/image-api/v1/images/1")
     api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
   }
 
@@ -90,7 +90,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     setApplicationUrl()
     val api = converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(DefaultImageMetaInformation, english)
 
-    api.get.metaUrl should equal ("http://image-api/v2/images/1")
+    api.get.metaUrl should equal ("http://image-api/v1/images/1")
     api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
   }
 
@@ -98,7 +98,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     setApplicationUrl()
 
     val api = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(DefaultImageMetaInformation, english)
-    api.get.metaUrl should equal ("http://local.digitallibrary.io/image-api/v2/images/1")
+    api.get.metaUrl should equal ("http://local.digitallibrary.io/image-api/v1/images/1")
     api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
   }
 }
