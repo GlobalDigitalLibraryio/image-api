@@ -8,6 +8,7 @@
 package no.ndla.imageapi.service.search
 
 
+import no.ndla.imageapi.model.domain.ReindexResult
 import no.ndla.imageapi.{TestEnvironment, UnitSuite}
 import org.mockito.Mockito._
 
@@ -26,6 +27,7 @@ class SearchServiceTest extends UnitSuite with TestEnvironment {
   test("That createEmptyIndexIfNoIndexesExist creates empty index if no indexes already exists") {
     when(indexService.findAllIndexes()).thenReturn(Success(List.empty))
     when(indexBuilderService.createEmptyIndex).thenReturn(Success(Some("images-123j")))
+    when(indexBuilderService.indexDocuments).thenReturn(Success(ReindexResult(0,0)))
     searchService.createEmptyIndexIfNoIndexesExist()
     verify(indexBuilderService).createEmptyIndex
   }

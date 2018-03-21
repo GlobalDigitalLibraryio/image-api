@@ -37,7 +37,6 @@ object ComponentRegistry
   with ConverterService
   with ValidationService
   with ImageController
-  with ImageControllerV2
   with RawController
   with InternController
   with HealthController
@@ -83,7 +82,6 @@ object ComponentRegistry
   lazy val imageStorage = new AmazonImageStorageService
   lazy val gdlClient = new GdlClient
   lazy val imageController = new ImageController
-  lazy val imageControllerV2 = new ImageControllerV2
   lazy val rawController = new RawController
   lazy val internController = new InternController
   lazy val healthController = new HealthController

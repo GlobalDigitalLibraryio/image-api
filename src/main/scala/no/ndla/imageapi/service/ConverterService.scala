@@ -79,7 +79,7 @@ trait ConverterService {
     }
 
     def asApiImageMetaInformationWithDomainUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationSingleLanguage] = {
-      asImageMetaInformationV2(domainImageMetaInformation, language, ImageApiProperties.ImageApiUrlBase.replace("v1", "v2"))
+      asImageMetaInformationV2(domainImageMetaInformation, language, ImageApiProperties.ImageApiUrlBase)
     }
 
     private def asImageMetaInformationV2(imageMeta: domain.ImageMetaInformation, language: LanguageTag, baseUrl: String): Option[api.ImageMetaInformationSingleLanguage] = {

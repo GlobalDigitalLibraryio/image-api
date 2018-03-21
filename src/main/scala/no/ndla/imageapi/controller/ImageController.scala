@@ -11,12 +11,11 @@ package no.ndla.imageapi.controller
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.ImageApiProperties.{MaxImageFileSizeBytes, RoleWithWriteAccess}
 import no.ndla.imageapi.auth.Role
-import no.ndla.imageapi.model.api.{Error, ImageMetaInformation, NewImageMetaInformation, SearchParams, SearchResult, ValidationError}
-import no.ndla.imageapi.model.{ValidationException, ValidationMessage}
+import no.ndla.imageapi.model.api.{Error, ImageMetaInformation, ImageMetaInformationSingleLanguage, NewImageMetaInformation, NewImageMetaInformationV2, SearchParams, SearchResult, ValidationError}
+import no.ndla.imageapi.model.{Language, ValidationException, ValidationMessage}
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.search.SearchService
 import no.ndla.imageapi.service.{ConverterService, WriteService}
-import org.postgresql.util.PSQLException
 import org.scalatra.servlet.{FileUploadSupport, MultipartConfig}
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger._
@@ -70,13 +69,14 @@ trait ImageController {
         responseMessages(response400, response500))
 
     val getByImageId =
-      (apiOperation[ImageMetaInformation]("findByImageId")
+      (apiOperation[ImageMetaInformationSingleLanguage]("findByImageId")
         summary "Show image info"
         notes "Shows info of the image with submitted id."
         parameters(
         headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
         headerParam[Option[String]]("app-key").description("Your app-key. May be omitted to access api anonymously, but rate limiting may apply on anonymous access."),
-        pathParam[String]("image_id").description("Image_id of the image that needs to be fetched.")
+        pathParam[String]("image_id").description("Image_id of the image that needs to be fetched."),
+        queryParam[Option[String]]("language").description("The BCP-47 language code describing language used in query-params.")
       )
         responseMessages(response404, response500))
 
@@ -112,12 +112,11 @@ trait ImageController {
 
     get("/", operation(getImages)) {
       val minimumSize = intOrNone("minimum-size")
-      val query = params.get("query")
-      val language = Try(params.get("language").map(LanguageTag(_))).getOrElse(None)
+      val query = paramOrNone("query")
+      val language = Try(paramOrNone("language").map(LanguageTag(_))).getOrElse(None)
       val license = params.get("license")
       val pageSize = intOrNone("page-size")
       val page = intOrNone("page")
-
 
       search(minimumSize, query, language, license, pageSize, page)
     }
@@ -136,9 +135,10 @@ trait ImageController {
 
     get("/:image_id", operation(getByImageId)) {
       val imageId = long("image_id")
-      imageRepository.withId(imageId) match {
-        case Some(image) => converterService.asApiImageMetaInformationWithApplicationUrl(image)
-        case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"Image with id $imageId not found"))
+      val language = paramOrNone("language").map(LanguageTag(_)).getOrElse(Language.DefaultLanguage)
+      imageRepository.withId(imageId).flatMap(image => converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(image, language)) match {
+        case Some(image) => image
+        case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"Image with id $imageId and language $language not found"))
       }
     }
 
@@ -146,22 +146,19 @@ trait ImageController {
       authRole.assertHasRole(RoleWithWriteAccess)
 
       val newImage = params.get("metadata")
-        .map(extract[NewImageMetaInformation])
-        .getOrElse(throw new ValidationException(errors = Seq(ValidationMessage("metadata", "The request must contain image metadata"))))
+        .map(extract[NewImageMetaInformationV2])
+        .getOrElse(throw new ValidationException(errors=Seq(ValidationMessage("metadata", "The request must contain image metadata"))))
 
-      val file = fileParams.getOrElse("file", throw new ValidationException(errors = Seq(ValidationMessage("file", "The request must contain an image file"))))
+      val file = fileParams.getOrElse("file", throw new ValidationException(errors=Seq(ValidationMessage("file", "The request must contain an image file"))))
 
       if (!filenameHasExtension(file.name)) {
         throw new ValidationException(errors = Seq(ValidationMessage("file", "Filename has an invalid extension")))
       }
 
-      writeService.storeNewImage(newImage, file).map(converterService.asApiImageMetaInformationWithApplicationUrl) match {
+      writeService.storeNewImage(converterService.asNewImageMetaInformation(newImage), file)
+        .map(img => converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(img, newImage.language)) match {
         case Success(imageMeta) => imageMeta
-        case Failure(e) => e match {
-          case _: PSQLException if e.getMessage.contains("duplicate key value violates unique constraint") =>
-              halt(status = 409, body = s"Image with external id '${newImage.externalId.getOrElse("")}' already exists.")
-          case _ => errorHandler(e)
-        }
+        case Failure(e) => errorHandler(e)
       }
     }
 
@@ -177,5 +174,4 @@ trait ImageController {
     }
 
   }
-
 }

@@ -25,7 +25,6 @@ trait HealthController {
 
     val endpointsToCheck = Seq(
       s"http://0.0.0.0:${ImageApiProperties.ApplicationPort}${ImageApiProperties.ImageApiBasePath}/v1/images/",
-      s"http://0.0.0.0:${ImageApiProperties.ApplicationPort}${ImageApiProperties.ImageApiBasePath}/v2/images/",
     )
 
     get("/") {

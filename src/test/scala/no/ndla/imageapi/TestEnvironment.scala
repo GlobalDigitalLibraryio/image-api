@@ -35,7 +35,6 @@ trait TestEnvironment
     with GdlClient
     with InternController
     with ImageController
-    with ImageControllerV2
     with RawController
     with HealthController
     with ImageConverter
@@ -56,7 +55,6 @@ trait TestEnvironment
 
   val gdlClient = mock[GdlClient]
   val imageController = mock[ImageController]
-  val imageControllerV2 = mock[ImageControllerV2]
   val rawController = mock[RawController]
   val internController = mock[InternController]
   val healthController = mock[HealthController]
