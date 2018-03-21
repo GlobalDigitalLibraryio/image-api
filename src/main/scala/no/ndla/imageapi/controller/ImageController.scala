@@ -151,10 +151,25 @@ trait ImageController {
 
       val file = fileParams.getOrElse("file", throw new ValidationException(errors=Seq(ValidationMessage("file", "The request must contain an image file"))))
 
+      if (!filenameHasExtension(file.name)) {
+        throw new ValidationException(errors = Seq(ValidationMessage("file", "Filename has an invalid extension")))
+      }
+
       writeService.storeNewImage(converterService.asNewImageMetaInformation(newImage), file)
         .map(img => converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(img, newImage.language)) match {
         case Success(imageMeta) => imageMeta
         case Failure(e) => errorHandler(e)
+      }
+    }
+
+    def filenameHasExtension(filename: String): Boolean = {
+      if (filename.endsWith(".")) {
+        false
+      } else {
+        filename.split('.').toList.reverse match {
+          case extension :: _ :: Nil if extension.length >= 3 => true
+          case _ => false
+        }
       }
     }
 

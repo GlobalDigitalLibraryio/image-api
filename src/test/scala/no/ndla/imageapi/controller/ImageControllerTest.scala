@@ -8,10 +8,21 @@
 
 package no.ndla.imageapi.controller
 
+import java.util.Date
+
 import io.digitallibrary.language.model.LanguageTag
+import no.ndla.imageapi.ImageApiProperties.MaxImageFileSizeBytes
+import no.ndla.imageapi.model.api.NewImageMetaInformation
+import no.ndla.imageapi.model.domain
 import no.ndla.imageapi.{ImageSwagger, TestEnvironment, UnitSuite}
+import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.scalatra.servlet.FileItem
+import org.scalatra.test.Uploadable
 import org.scalatra.test.scalatest.ScalatraSuite
+
+import scala.reflect.api
+import scala.util.Success
 
 class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironment {
 
@@ -32,6 +43,95 @@ class ImageControllerTest extends UnitSuite with ScalatraSuite with TestEnvironm
 
   override def beforeEach(): Unit = {
     reset(searchService)
+  }
+
+  case class PretendFile(content: Array[Byte], contentType: String, fileName: String) extends Uploadable {
+    override def contentLength: Long = content.length
+  }
+
+  val sampleUploadFile = PretendFile(Array[Byte](-1, -40, -1), "image/jpeg", "image.jpg")
+
+  val sampleNewImageMeta =
+    """
+      |{
+      |    "title": "Utedo med hjerte på døra",
+      |    "alttext": "En skeiv utedodør med utskåret hjerte. Foto.",
+      |    "copyright": {
+      |        "origin": "http://www.scanpix.no",
+      |        "authors": [],
+      |        "license": {
+      |            "description": "Creative Commons Attribution-ShareAlike 2.0 Generic",
+      |            "url": "https://creativecommons.org/licenses/by-sa/2.0/",
+      |            "license": "by-nc-sa"
+      |        }
+      |    }
+      |    "caption": "",
+      |    "tags": [],
+      |    "language": "nb"
+      |}
+      |
+    """.stripMargin
+
+  test("That POST / returns 400 if parameters are missing") {
+    post("/", Map("metadata" -> sampleNewImageMeta), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal (400)
+    }
+  }
+
+
+  test("That POST / returns 200 if everything went well") {
+    val titles: Seq[domain.ImageTitle] = Seq()
+    val alttexts: Seq[domain.ImageAltText] = Seq()
+    val copyright = domain.Copyright(domain.License("by", "description", None), "", Seq.empty)
+    val tags: Seq[domain.ImageTag] = Seq()
+    val captions: Seq[domain.ImageCaption] = Seq()
+
+    val sampleImageMeta = domain.ImageMetaInformation(Some(1), titles, alttexts, "http://some.url/img.jpg", 1024, "image/jpeg", copyright, tags, captions, "updatedBy", new Date())
+    when(writeService.storeNewImage(any[NewImageMetaInformation], any[FileItem])).thenReturn(Success(sampleImageMeta))
+
+    post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal (200)
+    }
+  }
+
+  test("That POST / returns 400 if filename lacks proper extension") {
+    def assert400(filename: String) = {
+      post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile.copy(fileName = filename)), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+        status should equal (400)
+      }
+    }
+    assert400("filename")
+    assert400("filename.")
+    assert400("filename.j")
+    assert400("filename.jp")
+    assert400("filename.jpg.")
+    assert400("filename.jpg.p")
+    assert400("filename.jpg.pn")
+  }
+
+  test("That POST / returns 403 if no auth-header") {
+    post("/", Map("metadata" -> sampleNewImageMeta)) {
+      status should equal (403)
+    }
+  }
+
+  test("That POST / returns 403 if auth header does not have expected role") {
+    post("/", Map("metadata" -> sampleNewImageMeta), headers = Map("Authorization" -> authHeaderWithWrongRole)) {
+      status should equal (403)
+    }
+  }
+
+  test("That POST / returns 403 if auth header does not have any roles") {
+    post("/", Map("metadata" -> sampleNewImageMeta), headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
+      status should equal (403)
+    }
+  }
+
+  test("That POST / returns 413 if file is too big") {
+    val content: Array[Byte] = Array.fill(MaxImageFileSizeBytes + 1) { 0 }
+    post("/", Map("metadata" -> sampleNewImageMeta), Map("file" -> sampleUploadFile.copy(content)), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal (413)
+    }
   }
 
   test("that GET /?language=eng parses language ok") {
