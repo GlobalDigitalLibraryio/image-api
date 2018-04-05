@@ -7,9 +7,12 @@
 
 package no.ndla.imageapi.model.search
 
-import io.digitallibrary.language.model.LanguageTag
+import java.util.Date
 
-case class LanguageValue[T](lang: LanguageTag, value: T)
+import io.digitallibrary.language.model.LanguageTag
+import no.ndla.imageapi.model.domain.LanguageField
+
+case class LanguageValue[T](language: LanguageTag, value: T) extends LanguageField[T]
 
 case class SearchableLanguageValues(languageValues: Seq[LanguageValue[String]])
 
@@ -20,6 +23,10 @@ case class SearchableImage (id: Long,
                             alttexts: SearchableLanguageValues,
                             captions: SearchableLanguageValues,
                             tags: SearchableLanguageList,
+                            contributors: Seq[String],
                             license: String,
                             imageSize: Long,
-                            previewUrl: String)
+                            previewUrl: String,
+                            lastUpdated: Date,
+                            defaultTitle: Option[String]
+                           )

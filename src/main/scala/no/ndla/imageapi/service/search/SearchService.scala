@@ -12,13 +12,14 @@ import com.sksamuel.elastic4s.http.search.SearchHits
 import com.sksamuel.elastic4s.searches.ScoreMode
 import com.sksamuel.elastic4s.searches.queries._
 import com.sksamuel.elastic4s.searches.queries.term.TermQueryDefinition
-import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
+import com.sksamuel.elastic4s.searches.sort.SortOrder
 import com.sksamuel.elastic4s.{IndexAndTypes, Indexes}
 import com.typesafe.scalalogging.LazyLogging
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.integration.ElasticClient
 import no.ndla.imageapi.model.api.{Error, ImageMetaSummary, SearchResult}
+import no.ndla.imageapi.model.domain.Sort
 import no.ndla.imageapi.model.search.{SearchableImage, SearchableLanguageFormats}
 import no.ndla.imageapi.model.{GdlSearchException, Language, ResultWindowTooLargeException}
 import org.elasticsearch.ElasticsearchException
@@ -38,7 +39,7 @@ trait SearchService {
     private val noCopyright = BoolQueryDefinition().not(TermQueryDefinition("license","copyrighted"))
 
     def createEmptyIndexIfNoIndexesExist(): Unit = {
-      val noIndexesExist = indexService.findAllIndexes().map(_.isEmpty).getOrElse(true)
+      val noIndexesExist = indexService.findAllIndexes.map(_.isEmpty).getOrElse(true)
       if (noIndexesExist) {
         indexBuilderService.createEmptyIndex match {
           case Success(_) =>
@@ -61,7 +62,33 @@ trait SearchService {
       searchConverterService.asImageMetaSummary(read[SearchableImage](hit), language)
     }
 
-    private def languageSpecificSearch(searchField: String, language: Option[LanguageTag], query: String, boost: Double): QueryDefinition = {
+    def getSortDefinition(sort: Sort.Value, language: String) = {
+      val sortLanguage = language match {
+        case Language.NoLanguage | Language.AllLanguages => "*"
+        case _ => language
+      }
+
+      sort match {
+        case (Sort.ByTitleAsc) =>
+          language match {
+            case "*" => fieldSort("defaultTitle").sortOrder(SortOrder.ASC).missing("_last")
+            case _ => fieldSort(s"titles.$sortLanguage.raw").nestedPath("titles").order(SortOrder.ASC).missing("_last")
+          }
+        case (Sort.ByTitleDesc) =>
+          language match {
+            case "*" => fieldSort("defaultTitle").sortOrder(SortOrder.DESC).missing("_last")
+            case _ => fieldSort(s"titles.$sortLanguage.raw").nestedPath("titles").order(SortOrder.DESC).missing("_last")
+          }
+        case (Sort.ByRelevanceAsc) => fieldSort("_score").order(SortOrder.ASC)
+        case (Sort.ByRelevanceDesc) => fieldSort("_score").order(SortOrder.DESC)
+        case (Sort.ByLastUpdatedAsc) => fieldSort("lastUpdated").order(SortOrder.ASC).missing("_last")
+        case (Sort.ByLastUpdatedDesc) => fieldSort("lastUpdated").order(SortOrder.DESC).missing("_last")
+        case (Sort.ByIdAsc) => fieldSort("id").order(SortOrder.ASC).missing("_last")
+        case (Sort.ByIdDesc) => fieldSort("id").order(SortOrder.DESC).missing("_last")
+      }
+    }
+
+    private def languageSpecificSearch(searchField: String, language: Option[LanguageTag], sort: Sort.Value, query: String, boost: Double): QueryDefinition = {
       language.map(_.toString) match {
         case Some(lang) =>
           val searchQuery = SimpleStringQueryDefinition(query).field(s"$searchField.$lang")
@@ -74,21 +101,21 @@ trait SearchService {
       }
     }
 
-    def matchingQuery(query: String, minimumSize: Option[Int], language: Option[LanguageTag], license: Option[String], page: Option[Int], pageSize: Option[Int]): SearchResult = {
+    def matchingQuery(query: String, minimumSize: Option[Int], language: Option[LanguageTag], sort: Sort.Value, license: Option[String], page: Option[Int], pageSize: Option[Int]): SearchResult = {
       val fullSearch = BoolQueryDefinition()
         .must(BoolQueryDefinition()
-          .should(languageSpecificSearch("titles", language, query, 2))
-          .should(languageSpecificSearch("alttexts", language, query, 1))
-          .should(languageSpecificSearch("captions", language, query, 2))
-          .should(languageSpecificSearch("tags", language, query, 2)))
+          .should(languageSpecificSearch("titles", language, sort, query, 2))
+          .should(languageSpecificSearch("alttexts", language, sort, query, 1))
+          .should(languageSpecificSearch("captions", language, sort, query, 2))
+          .should(languageSpecificSearch("tags", language, sort, query, 2)))
 
-      executeSearch(fullSearch, minimumSize, license, language, page, pageSize)
+      executeSearch(fullSearch, minimumSize, license, language, sort, page, pageSize)
     }
 
-    def all(minimumSize: Option[Int], license: Option[String], language: Option[LanguageTag], page: Option[Int], pageSize: Option[Int]): SearchResult =
-      executeSearch(BoolQueryDefinition(), minimumSize, license, language, page, pageSize)
+    def all(minimumSize: Option[Int], license: Option[String], language: Option[LanguageTag], sort: Sort.Value, page: Option[Int], pageSize: Option[Int]): SearchResult =
+      executeSearch(BoolQueryDefinition(), minimumSize, license, language, sort, page, pageSize)
 
-    def executeSearch(queryDefinition: BoolQueryDefinition, minimumSize: Option[Int], license: Option[String], language: Option[LanguageTag], page: Option[Int], pageSize: Option[Int]): SearchResult = {
+    def executeSearch(queryDefinition: BoolQueryDefinition, minimumSize: Option[Int], license: Option[String], language: Option[LanguageTag], sort: Sort.Value, page: Option[Int], pageSize: Option[Int]): SearchResult = {
       val licensedFiltered = license match {
         case None => queryDefinition.filter(noCopyright)
         case Some(lic) => queryDefinition.filter(TermQueryDefinition("license", lic))
@@ -117,14 +144,15 @@ trait SearchService {
         .bool(languageFiltered)
         .size(numResults)
         .from(startAt)
-        .sortBy(FieldSortDefinition("id"))
+        .sortBy(getSortDefinition(sort, language.get.toString))
 
       esClient.execute(
         search
       ) match {
-        case Success(response) => SearchResult(response.result.totalHits, page.getOrElse(1), numResults, getHits(response.result.hits, language))
+        case Success(response) => SearchResult(response.result.totalHits, page.getOrElse(1), numResults, language.toString, getHits(response.result.hits, language))
         case Failure(failure) => errorHandler(Failure(failure))
       }
+
     }
 
     def countDocuments(): Long = {

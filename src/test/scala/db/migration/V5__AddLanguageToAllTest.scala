@@ -24,10 +24,10 @@ class V5__AddLanguageToAllTest extends UnitSuite with TestEnvironment {
       Seq(V5_ImageCaption("Caption", None)), "", null)
 
     val after = migration.updateImageLanguage(before)
-    after.titles.forall(_.language.contains("unknown")) should be (true)
-    after.alttexts.forall(_.language.contains("unknown")) should be (true)
-    after.tags.forall(_.language.contains("unknown")) should be (true)
-    after.captions.forall(_.language.contains("unknown")) should be (true)
+    after.titles.forall(_.language.contains("und")) should be (true)
+    after.alttexts.forall(_.language.contains("und")) should be (true)
+    after.tags.forall(_.language.contains("und")) should be (true)
+    after.captions.forall(_.language.contains("und")) should be (true)
   }
 
   test("add language to stuff with missing empty string as language") {
@@ -40,10 +40,10 @@ class V5__AddLanguageToAllTest extends UnitSuite with TestEnvironment {
       Seq(V5_ImageCaption("Caption", Some(""))), "", null)
 
     val after = migration.updateImageLanguage(before)
-    after.titles.forall(_.language.contains("unknown")) should be (true)
-    after.alttexts.forall(_.language.contains("unknown")) should be (true)
-    after.tags.forall(_.language.contains("unknown")) should be (true)
-    after.captions.forall(_.language.contains("unknown")) should be (true)
+    after.titles.forall(_.language.contains("und")) should be (true)
+    after.alttexts.forall(_.language.contains("und")) should be (true)
+    after.tags.forall(_.language.contains("und")) should be (true)
+    after.captions.forall(_.language.contains("und")) should be (true)
   }
 
   test("that not modifying an existing language") {

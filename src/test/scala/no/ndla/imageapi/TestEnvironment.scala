@@ -20,7 +20,7 @@ import no.ndla.imageapi.service.search.{IndexBuilderService, IndexService, Searc
 import org.scalatest.mockito.MockitoSugar
 
 trait TestEnvironment
-  extends ElasticClient
+    extends ElasticClient
     with IndexService
     with SearchService
     with SearchConverterService
@@ -34,10 +34,9 @@ trait TestEnvironment
     with IndexBuilderService
     with GdlClient
     with InternController
-    with ImageController
     with ImageControllerV2
-    with RawController
     with HealthController
+    with RawController
     with ImageConverter
     with MockitoSugar
     with User
@@ -45,6 +44,7 @@ trait TestEnvironment
     with Clock
 {
   val amazonClient = mock[AmazonS3]
+  val esClient = mock[E4sClient]
 
   val dataSource = mock[javax.sql.DataSource]
   val indexService = mock[IndexService]
@@ -55,16 +55,14 @@ trait TestEnvironment
   val imageStorage = mock[AmazonImageStorageService]
 
   val gdlClient = mock[GdlClient]
-  val imageController = mock[ImageController]
-  val imageControllerV2 = mock[ImageControllerV2]
   val rawController = mock[RawController]
   val internController = mock[InternController]
-  val healthController = mock[HealthController]
+  val imageControllerV2= mock[ImageControllerV2]
   val converterService = mock[ConverterService]
   val validationService = mock[ValidationService]
-  val esClient = mock[E4sClient]
   val searchConverterService = mock[SearchConverterService]
   val imageConverter = mock[ImageConverter]
+  val healthController = mock[HealthController]
 
   val clock = mock[SystemClock]
   val authUser = mock[AuthUser]

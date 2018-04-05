@@ -8,6 +8,8 @@
 
 package no.ndla.imageapi.controller
 
+import io.digitallibrary.language.model.LanguageTag
+import no.ndla.imageapi.model.api.{ImageAltText, ImageCaption, ImageTag, ImageTitle}
 import no.ndla.imageapi.model.{api, domain}
 import no.ndla.imageapi.{ImageApiProperties, TestEnvironment, UnitSuite}
 import org.joda.time.{DateTime, DateTimeZone}
@@ -25,9 +27,22 @@ class InternControllerTest extends UnitSuite with ScalatraSuite with TestEnviron
   lazy val controller = new InternController
   addServlet(controller, "/*")
   val updated = new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC).toDate
+  val nob = LanguageTag("en")
 
-  val DefaultApiImageMetaInformation = api.ImageMetaInformation("1", s"${ImageApiProperties.ImageApiUrlBase}1", List(), List(), "http://local.digitallibrary.io/image-api/raw/test.jpg", 0, "", api.Copyright(api.License("", "", None), "", List()), List(), List())
-  val DefaultDomainImageMetaInformation = domain.ImageMetaInformation(Some(1), List(), List(), "/test.jpg", 0, "", domain.Copyright(domain.License("", "", None), "", List()), List(), List(), "ndla124", updated)
+  val DefaultApiImageMetaInformation = api.ImageMetaInformationV2(
+    "1",
+    s"${ImageApiProperties.ImageApiUrlBase}1",
+    ImageTitle("", nob),
+    ImageAltText("", nob),
+    s"${ImageApiProperties.CloudFrontUrl}/test.jpg",
+    0,
+    "",
+    api.Copyright(api.License("", "", None), "", List(), List(), List(), None, None, None),
+    ImageTag(Seq.empty, nob),
+    ImageCaption("", nob),
+    Seq())
+
+  val DefaultDomainImageMetaInformation = domain.ImageMetaInformation(Some(1), List(), List(), "test.jpg", 0, "", domain.Copyright(domain.License("", "", None), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
 
   override def beforeEach = {
     reset(imageRepository, indexService, indexBuilderService)
@@ -48,7 +63,7 @@ class InternControllerTest extends UnitSuite with ScalatraSuite with TestEnviron
   }
 
   test("That GET /extern/123 returns 200 and imagemeta when found") {
-    implicit val formats = org.json4s.DefaultFormats
+    implicit val formats = org.json4s.DefaultFormats + new LanguageTagSerializer
 
     when(imageRepository.withExternalId(eqTo("123"))).thenReturn(Some(DefaultDomainImageMetaInformation))
     get("/extern/123") {

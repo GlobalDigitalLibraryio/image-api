@@ -36,7 +36,6 @@ object ComponentRegistry
   with GdlClient
   with ConverterService
   with ValidationService
-  with ImageController
   with ImageControllerV2
   with RawController
   with InternController
@@ -46,6 +45,8 @@ object ComponentRegistry
   with Role
   with Clock
 {
+  def connectToDatabase(): Unit = ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
+
   implicit val swagger = new ImageSwagger
 
   lazy val dataSource = new HikariDataSource()
@@ -60,8 +61,8 @@ object ComponentRegistry
     val commonClient = AmazonS3ClientBuilder
       .standard()
       .withClientConfiguration(
-        new ClientConfiguration()
-          .withTcpKeepAlive(false)
+          new ClientConfiguration()
+            .withTcpKeepAlive(false)
       )
 
     (ImageApiProperties.Environment match {
@@ -82,7 +83,6 @@ object ComponentRegistry
   lazy val validationService = new ValidationService
   lazy val imageStorage = new AmazonImageStorageService
   lazy val gdlClient = new GdlClient
-  lazy val imageController = new ImageController
   lazy val imageControllerV2 = new ImageControllerV2
   lazy val rawController = new RawController
   lazy val internController = new InternController

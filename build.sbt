@@ -9,7 +9,7 @@ val AwsSdkversion = "1.11.231"
 val ScalaTestVersion = "3.0.1"
 val MockitoVersion = "1.10.19"
 val Elastic4sVersion = "6.1.4"
-val ElasticsearchVersion = "6.0.0"
+val ElasticsearchVersion = "6.0.1"
 
 val appProperties = settingKey[Properties]("The application properties")
 
@@ -33,8 +33,8 @@ lazy val image_api = (project in file(".")).
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= Seq(
       "gdl" %% "network" % "0.7",
-      "ndla" %% "mapping" % "0.4",
-      "gdl" %% "language" % "0.2",
+      "ndla" %% "mapping" % "0.7",
+      "gdl" %% "language" % "0.5",
       "joda-time" % "joda-time" % "2.8.2",
       "org.scalatra" %% "scalatra" % Scalatraversion,
       "org.scalatra" %% "scalatra-json" % Scalatraversion,
@@ -57,6 +57,7 @@ lazy val image_api = (project in file(".")).
       "org.scalatest" %% "scalatest" % ScalaTestVersion % "test",
       "org.mockito" % "mockito-all" % MockitoVersion % "test",
       "org.flywaydb" % "flyway-core" % "4.0",
+      "org.elasticsearch.client" % "elasticsearch-rest-high-level-client" % "6.0.1",
       "com.sksamuel.elastic4s" %% "elastic4s-core" % Elastic4sVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-http" % Elastic4sVersion,
       "com.sksamuel.elastic4s" %% "elastic4s-aws" % Elastic4sVersion,

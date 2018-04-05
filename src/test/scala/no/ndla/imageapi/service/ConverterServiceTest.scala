@@ -9,12 +9,13 @@
 package no.ndla.imageapi.service
 
 import java.util.Date
-import javax.servlet.http.HttpServletRequest
 
 import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.network.ApplicationUrl
+import javax.servlet.http.HttpServletRequest
+import no.ndla.imageapi.model.api
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.{ImageApiProperties, TestEnvironment, UnitSuite}
-import io.digitallibrary.network.ApplicationUrl
 import org.joda.time.{DateTime, DateTimeZone}
 import org.mockito.Mockito._
 
@@ -25,7 +26,9 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   val updated: Date = new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC).toDate
 
   val full = Image("/123.png", 200, "image/png")
-  val DefaultImageMetaInformation = ImageMetaInformation(Some(1), List(ImageTitle("test", LanguageTag("nb"))), List(), full.fileName, full.size, full.contentType, Copyright(License("", "", None), "", List()), List(), List(), "ndla124", updated)
+  val nob = LanguageTag("nb")
+  val DefaultImageMetaInformation = ImageMetaInformation(Some(1), List(ImageTitle("test", nob)), List(), full.fileName, full.size, full.contentType, Copyright(License("", "", None), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
+  val MultiLangImage = ImageMetaInformation(Some(2), List(ImageTitle("nynorsk", LanguageTag("nn")), ImageTitle("english", LanguageTag("en")), ImageTitle("norsk", LanguageTag("und"))), List(), full.fileName, full.size, full.contentType, Copyright(License("", "", None), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
   val english = LanguageTag("eng")
 
   override def beforeEach: Unit = {
@@ -33,7 +36,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     when(request.getServerPort).thenReturn(80)
     when(request.getScheme).thenReturn("http")
     when(request.getServerName).thenReturn("image-api")
-    when(request.getServletPath).thenReturn("/v1/images")
+    when(request.getServletPath).thenReturn("/v2/images")
 
     ApplicationUrl.set(request)
   }
@@ -54,13 +57,13 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   test("That asApiImageMetaInformationWithApplicationUrl returns links with applicationUrl") {
     val api = converterService.asApiImageMetaInformationWithApplicationUrl(DefaultImageMetaInformation)
-    api.metaUrl should equal ("http://image-api/v1/images/1")
+    api.metaUrl should equal ("http://image-api/v2/images/1")
     api.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
   }
 
   test("That asApiImageMetaInformationWithApplicationUrl returns links with applicationUrl, also when url lacks leading slash") {
     val api = converterService.asApiImageMetaInformationWithApplicationUrl(DefaultImageMetaInformation.copy(imageUrl = "123.png"))
-    api.metaUrl should equal ("http://image-api/v1/images/1")
+    api.metaUrl should equal ("http://image-api/v2/images/1")
     api.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
   }
 
@@ -101,4 +104,55 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     api.get.metaUrl should equal ("http://local.digitallibrary.io/image-api/v2/images/1")
     api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
   }
+
+  test("That asApiImageMetaInformationWithApplicationUrlV2 returns with agreement copyright features") {
+    setApplicationUrl()
+    val from = DateTime.now().minusDays(5).toDate
+    val to = DateTime.now().plusDays(10).toDate
+    val agreementCopyright = api.Copyright(
+      api.License("gnu", "gpl", None),
+      "http://tjohei.com/",
+      List(),
+      List(),
+      List(api.Author("Supplier", "Mads LakseService")),
+      None,
+      Some(from),
+      Some(to)
+    )
+    //when(draftApiClient.getAgreementCopyright(1)).thenReturn(Some(agreementCopyright))
+    val apiImage = converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(DefaultImageMetaInformation.copy(copyright = DefaultImageMetaInformation.copyright.copy(
+      processors = List(Author("Idea", "Kaptein Snabelfant")),
+      rightsholders = List(Author("Publisher", "KjeksOgKakerAS")),
+      agreementId = Some(1)
+    )), LanguageTag("und"))
+
+    apiImage.get.copyright.creators.size should equal(0)
+    apiImage.get.copyright.processors.head.name should equal("Kaptein Snabelfant")
+    //apiImage.get.copyright.rightsholders.head.name should equal("Mads LakseService")
+    apiImage.get.copyright.rightsholders.size should equal(1)
+    //apiImage.get.copyright.license.license should equal("gnu")
+    //apiImage.get.copyright.validFrom.get should equal(from)
+    //apiImage.get.copyright.validTo.get should equal(to)
+  }
+
+  test("that asImageMetaInformationV2 properly") {
+    val result1 = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("nb"))
+    result1.get.id should be("2")
+    result1.get.title.language should be(LanguageTag("en"))
+
+    val result2 = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("en"))
+    result2.get.id should be("2")
+    result2.get.title.language should be(LanguageTag("en"))
+
+    val result3 = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("nn"))
+    result3.get.id should be("2")
+    result3.get.title.language should be(LanguageTag("nn"))
+
+  }
+
+  test("that asImageMetaInformationV2 returns sorted supportedLanguages") {
+    val result = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("nb"))
+    result.get.supportedLanguages should be(Seq(LanguageTag("nn"), LanguageTag("en"), LanguageTag("und")))
+  }
+
 }

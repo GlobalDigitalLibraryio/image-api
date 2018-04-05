@@ -9,10 +9,11 @@
 package no.ndla.imageapi.controller
 
 import java.lang.Math.{max, min}
-import javax.servlet.http.HttpServletRequest
 
 import com.typesafe.scalalogging.LazyLogging
 import io.digitallibrary.network.{ApplicationUrl, AuthUser, CorrelationID}
+import javax.servlet.http.HttpServletRequest
+import no.ndla.imageapi.ComponentRegistry
 import no.ndla.imageapi.ImageApiProperties.{CorrelationIdHeader, CorrelationIdKey}
 import no.ndla.imageapi.model._
 import no.ndla.imageapi.model.api.{Error, ValidationError}
@@ -21,6 +22,7 @@ import org.apache.logging.log4j.ThreadContext
 import org.elasticsearch.index.IndexNotFoundException
 import org.json4s.native.Serialization.read
 import org.json4s.{DefaultFormats, Formats}
+import org.postgresql.util.PSQLException
 import org.scalatra.json.NativeJsonSupport
 import org.scalatra.servlet.SizeConstraintExceededException
 import org.scalatra.{BadRequest, InternalServerError, RequestEntityTooLarge, ScalatraServlet, _}
@@ -51,6 +53,7 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     case a: AccessDeniedException => Forbidden(body = Error(Error.ACCESS_DENIED, a.getMessage))
     case e: IndexNotFoundException => InternalServerError(body = Error.IndexMissingError)
     case i: ImageNotFoundException => NotFound(body = Error(Error.NOT_FOUND, i.getMessage))
+    case b: ImportException => UnprocessableEntity(body = Error(Error.IMPORT_FAILED, b.getMessage))
     case s: S3UploadException => {
       contentType = formats("json")
       GatewayTimeout(body = Error(Error.GATEWAY_TIMEOUT, s.getMessage))
@@ -59,6 +62,9 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     case _: SizeConstraintExceededException =>
       contentType = formats("json")
       RequestEntityTooLarge(body = Error.FileTooBigError)
+    case _: PSQLException =>
+      ComponentRegistry.connectToDatabase()
+      InternalServerError(Error.DatabaseUnavailableError)
     case t: Throwable => {
       logger.error(Error.GenericError.toString, t)
       InternalServerError(body = Error.GenericError)
@@ -76,6 +82,8 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
   def isInteger(value: String): Boolean = value.forall(_.isDigit)
 
   def isDouble(value: String): Boolean = Try(value.toDouble).isSuccess
+
+  def isBoolean(value: String): Boolean = Try(value.toBoolean).isSuccess
 
   def long(paramName: String)(implicit request: HttpServletRequest): Long = {
     val paramValue = params(paramName)
@@ -96,6 +104,11 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
         case _ => None
       }
     })
+  }
+
+  def booleanOrDefault(paramName: String, default: Boolean)(implicit request: HttpServletRequest): Boolean = {
+    val paramValue = paramOrDefault(paramName, "")
+    if (!isBoolean(paramValue)) default else paramValue.toBoolean
   }
 
   def paramOrNone(paramName: String)(implicit request: HttpServletRequest): Option[String] = {

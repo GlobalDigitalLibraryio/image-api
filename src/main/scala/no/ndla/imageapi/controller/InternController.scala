@@ -8,6 +8,8 @@
 
 package no.ndla.imageapi.controller
 
+import io.digitallibrary.language.model.LanguageTag
+import no.ndla.imageapi.model.Language
 import no.ndla.imageapi.model.api.Error
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.ConverterService
@@ -61,8 +63,9 @@ trait InternController {
 
     get("/extern/:image_id") {
       val externalId = params("image_id")
+      val language = paramOrNone("language").map(LanguageTag(_)).getOrElse(Language.DefaultLanguage)
       imageRepository.withExternalId(externalId) match {
-        case Some(image) => Ok(converterService.asApiImageMetaInformationWithDomainUrl(image))
+        case Some(image) => Ok(converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(image, language))
         case None => NotFound(Error(Error.NOT_FOUND, s"Image with external id $externalId not found"))
       }
     }
