@@ -149,7 +149,7 @@ trait SearchService {
       esClient.execute(
         search
       ) match {
-        case Success(response) => SearchResult(response.result.totalHits, page.getOrElse(1), numResults, language.toString, getHits(response.result.hits, language))
+        case Success(response) => SearchResult(response.result.totalHits, page.getOrElse(1), numResults, language.get.toString, getHits(response.result.hits, language))
         case Failure(failure) => errorHandler(Failure(failure))
       }
 

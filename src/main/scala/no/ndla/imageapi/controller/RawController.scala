@@ -46,25 +46,18 @@ trait RawController {
       .summary("Fetch an image with options to resize and crop")
       .notes("Fetches a image with options to resize and crop")
       .produces("application/octet-stream")
-      .authorizations("oauth2")
       .parameters(
-        List[Parameter](pathParam[String]("image_name").description("The name of the image"))
+        List[Parameter](pathParam[String]("name").description("The name of the image"))
           ++ getImageParams:_*
       ).responseMessages(response404, response500)
-
-    get("/:image_name", operation(getImageFile)) {
-      getRawImage(params("image_name"))
-    }
-
 
     val getImageFileById = new OperationBuilder(ValueDataType("file", Some("binary")))
       .nickname("getImageFileById")
       .summary("Fetch an image with options to resize and crop")
       .notes("Fetches a image with options to resize and crop")
       .produces("application/octet-stream")
-      .authorizations("oauth2")
       .parameters(
-        List[Parameter](pathParam[String]("image_id").description("The ID of the image"))
+        List[Parameter](pathParam[String]("id").description("The ID of the image"))
           ++ getImageParams:_*
       ).responseMessages(response404, response500)
 

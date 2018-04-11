@@ -50,7 +50,7 @@ trait ImageControllerV2 {
     private val correlationId = Param("X-Correlation-ID","User supplied correlation-id. May be omitted.")
     private val query = Param("query","Return only images with titles, alt-texts or tags matching the specified query.")
     private val minSize = Param("minimum-size","Return only images with full size larger than submitted value in bytes.")
-    private val language = Param("language", "The ISO 639-2 language code describing language.")
+    private val language = Param("language", "The BCP-47 language code describing language.")
     private val license = Param("license","Return only images with provided license.")
     private val sort = Param("sort",
       s"""The sorting used on results.
