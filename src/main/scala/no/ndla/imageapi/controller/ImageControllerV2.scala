@@ -114,13 +114,13 @@ trait ImageControllerV2 {
     get("/", operation(getImages)) {
       val minimumSize = intOrNone(this.minSize.paramName)
       val query = paramOrNone(this.query.paramName)
-      val language = Try(paramOrNone(this.language.paramName).map(LanguageTag(_))).getOrElse(None)
+      val language = paramOrNone(this.language.paramName).map(LanguageTag(_)).getOrElse(Language.DefaultLanguage)
       val license = params.get(this.license.paramName)
       val pageSize = intOrNone(this.pageSize.paramName)
       val page = intOrNone(this.pageNo.paramName)
       val sort = Sort.valueOf(paramOrDefault(this.sort.paramName, ""))
 
-      search(minimumSize, query, language, license, sort, pageSize, page)
+      search(minimumSize, query, Some(language), license, sort, pageSize, page)
     }
 
     val getImagesPost =
@@ -137,13 +137,13 @@ trait ImageControllerV2 {
       val searchParams = extract[SearchParams](request.body)
       val minimumSize = searchParams.minimumSize
       val query = searchParams.query
-      val language = Try(searchParams.language.map(LanguageTag(_))).getOrElse(None)
+      val language = paramOrNone(this.language.paramName).map(LanguageTag(_)).getOrElse(Language.DefaultLanguage)
       val license = searchParams.license
       val pageSize = searchParams.pageSize
       val page = searchParams.page
       val sort = Sort.valueOf(searchParams.sort)
 
-      search(minimumSize, query, language, license, sort, pageSize, page)
+      search(minimumSize, query, Some(language), license, sort, pageSize, page)
     }
 
     val getByImageId =

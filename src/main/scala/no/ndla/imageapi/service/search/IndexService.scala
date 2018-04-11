@@ -87,6 +87,7 @@ trait IndexService {
         mapping(ImageApiProperties.SearchDocument) as (
           intField("id"),
           keywordField("license"),
+          keywordField("defaultTitle"),
           intField("imageSize"),
           keywordField("previewUrl"),
           languageSupportedField("titles", keepRaw = true),
@@ -159,7 +160,7 @@ trait IndexService {
     private def languageSupportedField(fieldName: String, keepRaw: Boolean = false) = {
       val languageSupportedField = NestedFieldDefinition(fieldName)
       languageSupportedField.fields( keepRaw match {
-        case true => languageAnalyzers.map(langAnalyzer => textField(langAnalyzer.lang.toString()).fielddata(true) analyzer langAnalyzer.analyzer fields (keywordField("raw") index false))
+        case true => languageAnalyzers.map(langAnalyzer => textField(langAnalyzer.lang.toString()).fielddata(true).fields(keywordField("raw") analyzer langAnalyzer.analyzer))
         case false => languageAnalyzers.map(langAnalyzer => textField(langAnalyzer.lang.toString()).fielddata(true) analyzer langAnalyzer.analyzer)
       })
 

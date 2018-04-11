@@ -62,22 +62,22 @@ trait SearchService {
       searchConverterService.asImageMetaSummary(read[SearchableImage](hit), language)
     }
 
-    def getSortDefinition(sort: Sort.Value, language: String) = {
+    def getSortDefinition(sort: Sort.Value, language: Option[LanguageTag]) = {
       val sortLanguage = language match {
-        case Language.NoLanguage | Language.AllLanguages => "*"
-        case _ => language
+        case Some(lang) => lang.toString
+        case None => "*"
       }
 
       sort match {
         case (Sort.ByTitleAsc) =>
-          language match {
+          sortLanguage match {
             case "*" => fieldSort("defaultTitle").sortOrder(SortOrder.ASC).missing("_last")
-            case _ => fieldSort(s"titles.$sortLanguage.raw").nestedPath("titles").order(SortOrder.ASC).missing("_last")
+            case _ => fieldSort(s"titles.$sortLanguage.keyword").nestedPath("titles").order(SortOrder.ASC).missing("_last")
           }
         case (Sort.ByTitleDesc) =>
-          language match {
+          sortLanguage match {
             case "*" => fieldSort("defaultTitle").sortOrder(SortOrder.DESC).missing("_last")
-            case _ => fieldSort(s"titles.$sortLanguage.raw").nestedPath("titles").order(SortOrder.DESC).missing("_last")
+            case _ => fieldSort(s"titles.$sortLanguage.keyword").nestedPath("titles").order(SortOrder.DESC).missing("_last")
           }
         case (Sort.ByRelevanceAsc) => fieldSort("_score").order(SortOrder.ASC)
         case (Sort.ByRelevanceDesc) => fieldSort("_score").order(SortOrder.DESC)
@@ -144,7 +144,7 @@ trait SearchService {
         .bool(languageFiltered)
         .size(numResults)
         .from(startAt)
-        .sortBy(getSortDefinition(sort, language.get.toString))
+        .sortBy(getSortDefinition(sort, language))
 
       esClient.execute(
         search

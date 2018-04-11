@@ -16,7 +16,6 @@ object Language {
   val DefaultLanguage = LanguageTag("en")
   val UnknownLanguage = LanguageTag("und")
   val AllLanguages = "all"
-  val NoLanguage = ""
 
   val languageAnalyzers = Seq(
     LanguageAnalyzer(LanguageTag("nb"), NorwegianLanguageAnalyzer),
