@@ -54,6 +54,7 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
   val sampleNewImageMetaV2: String =
     """
       |{
+      |  "externalId": "ext1",
       |  "title":"test1",
       |  "alttext":"test2",
       |  "copyright": {
@@ -168,6 +169,7 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
 
     val sampleImageMeta = ImageMetaInformation(Some(1), titles, alttexts, "http://some.url/img.jpg", 1024, "image/jpeg", copyright, tags, captions, "updatedBy", new Date())
 
+    when(imageRepository.withExternalId("ext1")).thenReturn(None)
     when(writeService.storeNewImage(any[NewImageMetaInformationV2], any[FileItem])).thenReturn(Success(sampleImageMeta))
 
     post("/", Map("metadata" -> sampleNewImageMetaV2), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
@@ -187,6 +189,13 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
     }
   }
 
+  test("That POST / returns 409 if an image with same externalId already exists") {
+    when(imageRepository.withExternalId("ext1")).thenReturn(Some(mock[ImageMetaInformation]))
+    post("/", Map("metadata" -> sampleNewImageMetaV2), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+      status should equal(409)
+    }
+  }
+
   test("That POST / returns 413 if file is too big") {
     val content: Array[Byte] = Array.fill(MaxImageFileSizeBytes + 1) {
       0
@@ -197,6 +206,7 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
   }
 
   test("That POST / returns 500 if an unexpected error occurs") {
+    when(imageRepository.withExternalId("ext1")).thenReturn(None)
     when(writeService.storeNewImage(any[NewImageMetaInformationV2], any[FileItem])).thenReturn(Failure(mock[RuntimeException]))
 
     post("/", Map("metadata" -> sampleNewImageMetaV2), Map("file" -> sampleUploadFile), headers = Map("Authorization" -> authHeaderWithWriteRole)) {

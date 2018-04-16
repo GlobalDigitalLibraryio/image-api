@@ -48,39 +48,6 @@ trait ConverterService {
       api.ImageAltText(domainImageAltText.alttext, domainImageAltText.language)
     }
 
-    def asApiImageMetaInformationWithApplicationUrl(domainImageMetaInformation: domain.ImageMetaInformation): api.ImageMetaInformation = {
-      asApiImageMetaInformation(domainImageMetaInformation, Some(ApplicationUrl.get))
-    }
-
-    def asApiImageMetaInformationWithDomainUrl(domainImageMetaInformation: domain.ImageMetaInformation): api.ImageMetaInformation = {
-      asApiImageMetaInformation(domainImageMetaInformation, Some(ImageApiProperties.ImageApiUrlBase))
-    }
-
-    private def asApiImageMetaInformation(domainImageMetaInformation: domain.ImageMetaInformation, apiBaseUrl: Option[String] = None): api.ImageMetaInformation = {
-      api.ImageMetaInformation(
-        domainImageMetaInformation.id.get.toString,
-        apiBaseUrl.getOrElse("") + domainImageMetaInformation.id.get,
-        domainImageMetaInformation.titles.map(asApiImageTitle),
-        domainImageMetaInformation.alttexts.map(asApiImageAltText),
-        asApiUrl(domainImageMetaInformation.imageUrl),
-        domainImageMetaInformation.size,
-        domainImageMetaInformation.contentType,
-        asApiCopyright(domainImageMetaInformation.copyright),
-        domainImageMetaInformation.tags.map(asApiImageTag),
-        domainImageMetaInformation.captions.map(asApiCaption))
-    }
-
-    def asNewImageMetaInformation(newImageMeta: api.NewImageMetaInformationV2): api.NewImageMetaInformationV2 = {
-      api.NewImageMetaInformationV2(
-        newImageMeta.title,
-        newImageMeta.alttext,
-        newImageMeta.copyright,
-        newImageMeta.tags,
-        newImageMeta.caption,
-        newImageMeta.language
-      )
-    }
-
     def asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationV2] = {
       asImageMetaInformationV2(domainImageMetaInformation, language, ApplicationUrl.get)
     }

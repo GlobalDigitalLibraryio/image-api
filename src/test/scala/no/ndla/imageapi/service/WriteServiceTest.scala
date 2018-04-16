@@ -33,6 +33,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
   val fileMock1: FileItem = mock[FileItem]
 
   val newImageMeta = NewImageMetaInformationV2(
+    "ext1",
     "title",
     "alt text",
     Copyright(License("by", "", None), "", Seq.empty, Seq.empty, Seq.empty, None, None, None),
@@ -273,7 +274,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
 
     writeService.mergeImages(existing, toUpdate) should equal(expectedResult)
   }
-  
+
   test("MD5 hashing works as expected") {
     val bis = new BufferedInputStream(TestData.NdlaLogoImage.stream)
     val bytes = Stream.continually(bis.read).takeWhile(p => p != -1).map(_.toByte).toArray

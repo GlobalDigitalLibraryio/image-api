@@ -23,7 +23,7 @@ import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger._
 import org.scalatra.util.NotNothing
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success}
 
 trait ImageControllerV2 {
   this: ImageRepository with SearchService with ConverterService with WriteService with Role with User =>
@@ -190,7 +190,11 @@ trait ImageControllerV2 {
 
       val file = fileParams.getOrElse(this.file.paramName, throw new ValidationException(errors = Seq(ValidationMessage("file", "The request must contain an image file"))))
 
-      writeService.storeNewImage(converterService.asNewImageMetaInformation(newImage), file)
+      if (imageRepository.withExternalId(newImage.externalId).isDefined) {
+        halt(status = 409, body = Error(Error.CONFLICT, s"An image with external id=${newImage.externalId} already exists"))
+      }
+
+      writeService.storeNewImage(newImage, file)
         .map(img => converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(img, newImage.language)) match {
         case Success(imageMeta) => imageMeta
         case Failure(e) => errorHandler(e)
