@@ -43,25 +43,22 @@ trait RawController {
 
     val getImageFile = new OperationBuilder(ValueDataType("file", Some("binary")))
       .nickname("getImageFile")
-      .summary("Fetches a raw image")
+      .summary("Fetch an image with options to resize and crop")
       .notes("Fetches a image with options to resize and crop")
       .produces("application/octet-stream")
-      .authorizations("oauth2")
       .parameters(
         List[Parameter](pathParam[String]("name").description("The name of the image"))
           ++ getImageParams:_*
       ).responseMessages(response404, response500)
 
-
     val getImageFileById = new OperationBuilder(ValueDataType("file", Some("binary")))
       .nickname("getImageFileById")
-      .summary("Fetches a raw image using the image id")
+      .summary("Fetch an image with options to resize and crop")
       .notes("Fetches a image with options to resize and crop")
       .produces("application/octet-stream")
-      .authorizations("oauth2")
       .parameters(
         List[Parameter](pathParam[String]("id").description("The ID of the image"))
-        ++ getImageParams:_*
+          ++ getImageParams:_*
       ).responseMessages(response404, response500)
 
     get("/:name", operation(getImageFile)) {
@@ -78,11 +75,11 @@ trait RawController {
     }
 
     private def getRawImage(imageName: String): ImageStream = {
-      imageStorage.get(imageName)
-        .flatMap(crop)
-        .flatMap(dynamicCrop)
-        .flatMap(resize) match {
-        case Success(img) => img
+      imageStorage.get(imageName) match {
+        case Success(img) if img.format.equals("gif") => img
+        case Success(img) => {
+          crop(img).flatMap(dynamicCrop).flatMap(resize).get
+        }
         case Failure(e) => throw e
       }
     }

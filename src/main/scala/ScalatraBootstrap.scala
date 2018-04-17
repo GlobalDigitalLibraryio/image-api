@@ -14,8 +14,7 @@ import org.scalatra.LifeCycle
 class ScalatraBootstrap extends LifeCycle {
 
   override def init(context: ServletContext) {
-    context.mount(ComponentRegistry.imageController, ImageApiProperties.ImageControllerPath, "images")
-    context.mount(ComponentRegistry.imageControllerV2, s"${ImageApiProperties.ImageApiBasePath}/v2/images", "imagesV2")
+    context.mount(ComponentRegistry.imageControllerV2, ImageApiProperties.ImageControllerPath, "imagesV2")
     context.mount(ComponentRegistry.rawController, ImageApiProperties.RawControllerPath, "raw")
     context.mount(ComponentRegistry.resourcesApp, ImageApiProperties.ApiDocsPath)
     context.mount(ComponentRegistry.internController, "/intern")

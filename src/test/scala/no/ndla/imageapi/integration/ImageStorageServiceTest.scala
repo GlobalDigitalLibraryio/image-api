@@ -51,7 +51,7 @@ class ImageStorageServiceTest extends UnitSuite with TestEnvironment {
     val s3object = new S3Object()
     s3object.setObjectMetadata(new ObjectMetadata())
     s3object.getObjectMetadata.setContentType(ContentType)
-    s3object.setObjectContent(NdlaLogoImage.stream)
+    s3object.setObjectContent(TestData.NdlaLogoImage.stream)
     when(amazonClient.getObject(any[GetObjectRequest])).thenReturn(s3object)
 
     val image = imageStorage.get("existing")

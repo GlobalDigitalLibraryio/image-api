@@ -30,10 +30,20 @@ object ImageApiProperties extends LazyLogging {
   val HealthControllerPath = "/health"
   val ImageApiBasePath = "/image-api"
   val ApiDocsPath = s"$ImageApiBasePath/api-docs"
-  val ImageControllerPath = s"$ImageApiBasePath/v1/images"
+  val ImageControllerPath = s"$ImageApiBasePath/v2/images"
   val RawControllerPath = s"$ImageApiBasePath/raw"
 
-  val DefaultLanguage = LanguageTag("nob")
+  val DefaultLanguage = LanguageTag("nb")
+
+  val oldCreatorTypes = List("opphavsmann", "fotograf", "kunstner", "redaksjonelt", "forfatter", "manusforfatter", "innleser", "oversetter", "regissør", "illustratør", "medforfatter", "komponist")
+  val creatorTypes = List("originator", "photographer", "artist", "editorial", "writer", "scriptwriter", "reader", "translator", "director", "illustrator", "cowriter", "composer")
+
+  val oldProcessorTypes = List("bearbeider", "tilrettelegger", "redaksjonelt", "språklig", "ide", "sammenstiller", "korrektur")
+  val processorTypes = List("processor", "facilitator", "editorial", "linguistic", "idea", "compiler", "correction")
+
+  val oldRightsholderTypes = List("rettighetshaver", "forlag", "distributør", "leverandør")
+  val rightsholderTypes = List("rightsholder", "publisher", "distributor", "supplier")
+  val allowedAuthors = ImageApiProperties.creatorTypes ++ ImageApiProperties.processorTypes ++ ImageApiProperties.rightsholderTypes
 
   val IsoMappingCacheAgeInMs = 1000 * 60 * 60 // 1 hour caching
   val LicenseMappingCacheAgeInMs = 1000 * 60 * 60 // 1 hour caching
@@ -42,6 +52,8 @@ object ImageApiProperties extends LazyLogging {
 
   val MetaMaxConnections = 20
   val Environment = propOrElse("GDL_ENVIRONMENT", "local")
+  val (redDBSource, cmDBSource) = ("red", "cm")
+  val ImageImportSource = redDBSource
   val MetaUserName = prop(PropertyKeys.MetaUserNameKey)
   val MetaPassword = prop(PropertyKeys.MetaPasswordKey)
   val MetaResource = prop(PropertyKeys.MetaResourceKey)

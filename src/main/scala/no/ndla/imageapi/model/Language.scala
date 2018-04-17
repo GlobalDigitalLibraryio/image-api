@@ -10,21 +10,20 @@ package no.ndla.imageapi.model
 import com.sksamuel.elastic4s.analyzers._
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.model.domain.LanguageField
+import no.ndla.mapping.ISO639
 
 object Language {
-  val DefaultLanguage = LanguageTag("eng")
-  val UnknownLanguage = "unknown"
+  val DefaultLanguage = LanguageTag("en")
+  val UnknownLanguage = LanguageTag("und")
   val AllLanguages = "all"
-  val NoLanguage = ""
 
   val languageAnalyzers = Seq(
-    LanguageAnalyzer("nob", NorwegianLanguageAnalyzer),
-    LanguageAnalyzer("eng", EnglishLanguageAnalyzer),
-    LanguageAnalyzer("fra", FrenchLanguageAnalyzer),
-    LanguageAnalyzer("deu", GermanLanguageAnalyzer),
-    LanguageAnalyzer("spa", SpanishLanguageAnalyzer),
-    LanguageAnalyzer("sme", StandardAnalyzer), // SAMI
-    LanguageAnalyzer("zho", ChineseLanguageAnalyzer),
+    LanguageAnalyzer(LanguageTag("nb"), NorwegianLanguageAnalyzer),
+    LanguageAnalyzer(LanguageTag("en"), EnglishLanguageAnalyzer),
+    LanguageAnalyzer(LanguageTag("fr"), FrenchLanguageAnalyzer),
+    LanguageAnalyzer(LanguageTag("de"), GermanLanguageAnalyzer),
+    LanguageAnalyzer(LanguageTag("es"), SpanishLanguageAnalyzer),
+    LanguageAnalyzer(LanguageTag("zh"), ChineseLanguageAnalyzer),
     LanguageAnalyzer(UnknownLanguage, EnglishLanguageAnalyzer)
   )
 
@@ -48,10 +47,17 @@ object Language {
   def languageOrUnknown(language: Option[String]): String = {
     language.filter(_.nonEmpty) match {
       case Some(x) => x
-      case None => UnknownLanguage
+      case None => UnknownLanguage.toString
+    }
+  }
+
+  def findSupportedLanguages[_](fields: Seq[LanguageField[_]]*): Seq[LanguageTag] = {
+    val supportedLanguages = fields.flatMap(languageFields => languageFields.map(lf => lf.language)).distinct
+    supportedLanguages.sortBy{lang =>
+      ISO639.languagePriority.indexOf(lang.toString)
     }
   }
 }
 
-case class LanguageAnalyzer(lang: String, analyzer: Analyzer)
+case class LanguageAnalyzer(lang: LanguageTag, analyzer: Analyzer)
 

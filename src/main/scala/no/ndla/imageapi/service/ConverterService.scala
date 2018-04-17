@@ -8,14 +8,14 @@
 
 package no.ndla.imageapi.service
 
+import com.netaporter.uri.Uri.parse
 import com.typesafe.scalalogging.LazyLogging
+import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.auth.User
 import no.ndla.imageapi.model.Language._
 import no.ndla.imageapi.model.{api, domain}
-import io.digitallibrary.network.ApplicationUrl
-import com.netaporter.uri.Uri.parse
-import io.digitallibrary.language.model.LanguageTag
 
 trait ConverterService {
   this: User with Clock =>
@@ -29,7 +29,15 @@ trait ConverterService {
     }
 
     def asApiCopyright(domainCopyright: domain.Copyright): api.Copyright = {
-      api.Copyright(asApiLicense(domainCopyright.license), domainCopyright.origin, domainCopyright.authors.map(asApiAuthor))
+      api.Copyright(
+        asApiLicense(domainCopyright.license),
+        domainCopyright.origin,
+        domainCopyright.creators.map(asApiAuthor),
+        domainCopyright.processors.map(asApiAuthor),
+        domainCopyright.rightsholders.map(asApiAuthor),
+        domainCopyright.agreementId,
+        domainCopyright.validFrom,
+        domainCopyright.validTo)
     }
 
     def asApiImage(domainImage: domain.Image, baseUrl: Option[String] = None): api.Image = {
@@ -40,56 +48,22 @@ trait ConverterService {
       api.ImageAltText(domainImageAltText.alttext, domainImageAltText.language)
     }
 
-    def asApiImageMetaInformationWithApplicationUrl(domainImageMetaInformation: domain.ImageMetaInformation): api.ImageMetaInformation = {
-      asApiImageMetaInformation(domainImageMetaInformation, Some(ApplicationUrl.get))
-    }
-
-    def asApiImageMetaInformationWithDomainUrl(domainImageMetaInformation: domain.ImageMetaInformation): api.ImageMetaInformation = {
-      asApiImageMetaInformation(domainImageMetaInformation, Some(ImageApiProperties.ImageApiUrlBase))
-    }
-
-    private def asApiImageMetaInformation(domainImageMetaInformation: domain.ImageMetaInformation, apiBaseUrl: Option[String] = None): api.ImageMetaInformation = {
-
-      api.ImageMetaInformation(
-        domainImageMetaInformation.id.get.toString,
-        apiBaseUrl.getOrElse("") + domainImageMetaInformation.id.get,
-        domainImageMetaInformation.titles.map(asApiImageTitle),
-        domainImageMetaInformation.alttexts.map(asApiImageAltText),
-        asApiUrl(domainImageMetaInformation.imageUrl),
-        domainImageMetaInformation.size,
-        domainImageMetaInformation.contentType,
-        asApiCopyright(domainImageMetaInformation.copyright),
-        domainImageMetaInformation.tags.map(asApiImageTag),
-        domainImageMetaInformation.captions.map(asApiCaption))
-    }
-
-    def asNewImageMetaInformation(newImageMeta: api.NewImageMetaInformationV2): api.NewImageMetaInformation = {
-      api.NewImageMetaInformation(
-        None,
-        Seq(api.ImageTitle(newImageMeta.title, newImageMeta.language)),
-        Seq(api.ImageAltText(newImageMeta.alttext, newImageMeta.language)),
-        newImageMeta.copyright,
-        if (newImageMeta.tags.nonEmpty) Some(Seq(api.ImageTag(newImageMeta.tags, newImageMeta.language))) else None,
-        Some(Seq(api.ImageCaption(newImageMeta.caption, newImageMeta.language)))
-      )
-    }
-
-    def asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationSingleLanguage] = {
+    def asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationV2] = {
       asImageMetaInformationV2(domainImageMetaInformation, language, ApplicationUrl.get)
     }
 
-    def asApiImageMetaInformationWithDomainUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationSingleLanguage] = {
+    def asApiImageMetaInformationWithDomainUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationV2] = {
       asImageMetaInformationV2(domainImageMetaInformation, language, ImageApiProperties.ImageApiUrlBase.replace("v1", "v2"))
     }
 
-    private def asImageMetaInformationV2(imageMeta: domain.ImageMetaInformation, language: LanguageTag, baseUrl: String): Option[api.ImageMetaInformationSingleLanguage] = {
+    private def asImageMetaInformationV2(imageMeta: domain.ImageMetaInformation, language: LanguageTag, baseUrl: String): Option[api.ImageMetaInformationV2] = {
       val defaultLanguage = DefaultLanguage
       val title = findByLanguageOrBestEffort(imageMeta.titles, language).map(asApiImageTitle).getOrElse(api.ImageTitle("", defaultLanguage))
       val alttext = findByLanguageOrBestEffort(imageMeta.alttexts, language).map(asApiImageAltText).getOrElse(api.ImageAltText("", defaultLanguage))
       val tags = findByLanguageOrBestEffort(imageMeta.tags, language).map(asApiImageTag).getOrElse(api.ImageTag(Seq(), defaultLanguage))
       val caption = findByLanguageOrBestEffort(imageMeta.captions, language).map(asApiCaption).getOrElse(api.ImageCaption("", defaultLanguage))
 
-      Some(api.ImageMetaInformationSingleLanguage(
+      Some(api.ImageMetaInformationV2(
         imageMeta.id.get.toString,
         baseUrl + imageMeta.id.get,
         title,
@@ -97,10 +71,33 @@ trait ConverterService {
         asApiUrl(imageMeta.imageUrl),
         imageMeta.size,
         imageMeta.contentType,
-        asApiCopyright(imageMeta.copyright),
+        withAgreementCopyright(asApiCopyright(imageMeta.copyright)),
         tags,
         caption,
         getSupportedLanguages(imageMeta)))
+    }
+
+    def withAgreementCopyright(image: domain.ImageMetaInformation): domain.ImageMetaInformation = {
+      val agreementCopyright = image.copyright
+
+      image.copy(copyright = image.copyright.copy(
+        license = agreementCopyright.license,
+        creators = agreementCopyright.creators,
+        rightsholders = agreementCopyright.rightsholders,
+        validFrom = agreementCopyright.validFrom,
+        validTo = agreementCopyright.validTo
+      ))
+    }
+
+    def withAgreementCopyright(copyright: api.Copyright): api.Copyright = {
+      val agreementCopyright = copyright
+      copyright.copy(
+        license = agreementCopyright.license,
+        creators = agreementCopyright.creators,
+        rightsholders = agreementCopyright.rightsholders,
+        validFrom = agreementCopyright.validFrom,
+        validTo = agreementCopyright.validTo
+      )
     }
 
     def asApiImageTag(domainImageTag: domain.ImageTag): api.ImageTag = {
@@ -122,32 +119,40 @@ trait ConverterService {
       ImageApiProperties.CloudFrontUrl + (if (url.startsWith("/")) url else "/" + url)
     }
 
-    def asDomainImageMetaInformation(imageMeta: api.NewImageMetaInformation, image: domain.Image): domain.ImageMetaInformation = {
+    def asDomainImageMetaInformationV2(imageMeta: api.NewImageMetaInformationV2, image: domain.Image): domain.ImageMetaInformation = {
       domain.ImageMetaInformation(
         None,
-        imageMeta.titles.map(asDomainTitle),
-        imageMeta.alttexts.map(asDomainAltText),
+        Seq(asDomainTitle(imageMeta.title, imageMeta.language)),
+        Seq(asDomainAltText(imageMeta.alttext, imageMeta.language)),
         parse(image.fileName).toString,
         image.size,
         image.contentType,
         toDomainCopyright(imageMeta.copyright),
-        imageMeta.tags.getOrElse(Seq.empty).map(toDomainTag),
-        imageMeta.captions.getOrElse(Seq.empty).map(toDomainCaption),
-        authUser.id(),
+        if (imageMeta.tags.nonEmpty) Seq(toDomainTag(imageMeta.tags, imageMeta.language)) else Seq.empty,
+        Seq(domain.ImageCaption(imageMeta.caption, imageMeta.language)),
+        authUser.userOrClientid(),
         clock.now()
       )
     }
 
-    def asDomainTitle(title: api.ImageTitle): domain.ImageTitle = {
-      domain.ImageTitle(title.title, title.language)
+    def asDomainTitle(title: String, language: LanguageTag): domain.ImageTitle = {
+      domain.ImageTitle(title, language)
     }
 
-    def asDomainAltText(alt: api.ImageAltText): domain.ImageAltText = {
-      domain.ImageAltText(alt.alttext, alt.language)
+    def asDomainAltText(alt: String, language: LanguageTag): domain.ImageAltText = {
+      domain.ImageAltText(alt, language)
     }
 
     def toDomainCopyright(copyright: api.Copyright): domain.Copyright = {
-      domain.Copyright(toDomainLicense(copyright.license), copyright.origin, copyright.authors.map(toDomainAuthor))
+      domain.Copyright(
+        toDomainLicense(copyright.license),
+        copyright.origin,
+        copyright.creators.map(toDomainAuthor),
+        copyright.processors.map(toDomainAuthor),
+        copyright.rightsholders.map(toDomainAuthor),
+        copyright.agreementId,
+        copyright.validFrom,
+        copyright.validTo)
     }
 
     def toDomainLicense(license: api.License): domain.License = {
@@ -158,12 +163,12 @@ trait ConverterService {
       domain.Author(author.`type`, author.name)
     }
 
-    def toDomainTag(tag: api.ImageTag): domain.ImageTag = {
-      domain.ImageTag(tag.tags, tag.language)
+    def toDomainTag(tags: Seq[String], language: LanguageTag): domain.ImageTag = {
+      domain.ImageTag(tags, language)
     }
 
-    def toDomainCaption(caption: api.ImageCaption): domain.ImageCaption = {
-      domain.ImageCaption(caption.caption, caption.language)
+    def toDomainCaption(caption: String, language: LanguageTag): domain.ImageCaption = {
+      domain.ImageCaption(caption, language)
     }
 
     def getSupportedLanguages(domainImageMetaInformation: domain.ImageMetaInformation): Seq[LanguageTag] = {
@@ -175,4 +180,5 @@ trait ConverterService {
     }
 
   }
+
 }

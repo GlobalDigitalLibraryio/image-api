@@ -25,12 +25,15 @@ trait ImageRepository {
   class ImageRepository extends LazyLogging {
     implicit val formats = org.json4s.DefaultFormats + ImageMetaInformation.JSonSerializer + new LanguageTagSerializer
 
-    ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
-
     def withId(id: Long): Option[ImageMetaInformation] = {
       DB readOnly { implicit session =>
         imageMetaInformationWhere(sqls"im.id = $id")
       }
+    }
+
+   def getRandomImage()(implicit session: DBSession = ReadOnlyAutoSession): Option[ImageMetaInformation] = {
+      val im = ImageMetaInformation.syntax("im")
+      sql"select ${im.result.*} from ${ImageMetaInformation.as(im)} where metadata is not null order by random() limit 1".map(ImageMetaInformation(im)).single().apply()
     }
 
     def withExternalId(externalId: String): Option[ImageMetaInformation] = {
