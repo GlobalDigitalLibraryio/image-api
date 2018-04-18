@@ -134,7 +134,7 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
     val testUrl = "http://test.test/1"
     val expectedBody = s"""{"id":"1","metaUrl":"$testUrl","title":{"title":"Elg i busk","language":"nb"},"alttext":{"alttext":"Elg i busk","language":"nb"},"imageUrl":"$testUrl","size":2865539,"contentType":"image/jpeg","copyright":{"license":{"license":"by-nc-sa","description":"Creative Commons Attribution-NonCommercial-ShareAlike 2.0 Generic","url":"https://creativecommons.org/licenses/by-nc-sa/2.0/"}, "agreementId":1, "origin":"http://www.scanpix.no","creators":[{"type":"Fotograf","name":"Test Testesen"}],"processors":[{"type":"Redaksjonelt","name":"Kåre Knegg"}],"rightsholders":[{"type":"Leverandør","name":"Leverans Leveransensen"}]},"tags":{"tags":["rovdyr","elg"],"language":"nb"},"caption":{"caption":"Elg i busk","language":"nb"},"supportedLanguages":["nb"]}"""
     val expectedObject = JsonParser.parse(expectedBody).extract[api.ImageMetaInformationV2]
-    val agreementElg = ImageMetaInformation(Some(1), List(ImageTitle("Elg i busk", nob)), List(ImageAltText("Elg i busk", nob)),
+    val agreementElg = ImageMetaInformation(Some(1), None, List(ImageTitle("Elg i busk", nob)), List(ImageAltText("Elg i busk", nob)),
       "Elg.jpg", 2865539, "image/jpeg",
       Copyright(TestData.ByNcSa, "http://www.scanpix.no", List(Author("Fotograf", "Test Testesen")), List(Author("Redaksjonelt", "Kåre Knegg")), List(Author("Leverandør", "Leverans Leveransensen")), Some(1), None, None),
       List(ImageTag(List("rovdyr", "elg"), nob)), List(ImageCaption("Elg i busk", nob)), "ndla124", TestData.updated())
@@ -167,7 +167,7 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
     val tags: Seq[ImageTag] = Seq()
     val captions: Seq[ImageCaption] = Seq()
 
-    val sampleImageMeta = ImageMetaInformation(Some(1), titles, alttexts, "http://some.url/img.jpg", 1024, "image/jpeg", copyright, tags, captions, "updatedBy", new Date())
+    val sampleImageMeta = ImageMetaInformation(Some(1), None, titles, alttexts, "http://some.url/img.jpg", 1024, "image/jpeg", copyright, tags, captions, "updatedBy", new Date())
 
     when(imageRepository.withExternalId("ext1")).thenReturn(None)
     when(writeService.storeNewImage(any[NewImageMetaInformationV2], any[FileItem])).thenReturn(Success(sampleImageMeta))

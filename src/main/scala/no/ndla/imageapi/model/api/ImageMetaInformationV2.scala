@@ -8,6 +8,7 @@ import scala.annotation.meta.field
 
 @ApiModel(description = "Meta information for the image")
 case class ImageMetaInformationV2(@(ApiModelProperty@field)(description = "The unique id of the image") id: String,
+                                  @(ApiModelProperty@field)(description = "Optional externalId for the image") externalId: Option[String],
                                   @(ApiModelProperty@field)(description = "The url to where this information can be found") metaUrl: String,
                                   @(ApiModelProperty@field)(description = "The title for the image") title: ImageTitle,
                                   @(ApiModelProperty@field)(description = "Alternative text for the image") alttext: ImageAltText,
