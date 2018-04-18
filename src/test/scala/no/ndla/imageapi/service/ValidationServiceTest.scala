@@ -14,7 +14,7 @@ class ValidationServiceTest extends UnitSuite with TestEnvironment {
   val fileMock = mock[FileItem]
   def updated() = (new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC)).toDate
 
-  val sampleImageMeta = ImageMetaInformation(Some(1), Seq.empty, Seq.empty, "image.jpg", 1024, "image/jpeg", Copyright(License("by", "by", None), "", Seq.empty, Seq.empty, Seq.empty, None, None, None), Seq.empty, Seq.empty, "ndla124", updated())
+  val sampleImageMeta = ImageMetaInformation(Some(1), None, Seq.empty, Seq.empty, "image.jpg", 1024, "image/jpeg", Copyright(License("by", "by", None), "", Seq.empty, Seq.empty, Seq.empty, None, None, None), Seq.empty, Seq.empty, "ndla124", updated())
   val nob = LanguageTag("nb")
 
   override def beforeEach = {

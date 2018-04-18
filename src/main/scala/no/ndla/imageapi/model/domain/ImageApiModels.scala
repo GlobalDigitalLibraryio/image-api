@@ -28,6 +28,7 @@ case class License(license: String, description: String, url: Option[String])
 case class Author(`type`: String, name: String)
 case class ImageMetaInformation(
   id: Option[Long],
+  externalId: Option[String],
   titles: Seq[ImageTitle],
   alttexts: Seq[ImageAltText],
   imageUrl: String,
@@ -50,7 +51,7 @@ object ImageMetaInformation extends SQLSyntaxSupport[ImageMetaInformation] {
 
   def apply(im: ResultName[ImageMetaInformation])(rs: WrappedResultSet): ImageMetaInformation = {
     val meta = read[ImageMetaInformation](rs.string(im.c("metadata")))
-    ImageMetaInformation(Some(rs.long(im.c("id"))), meta.titles, meta.alttexts, meta.imageUrl, meta.size, meta.contentType,
+    ImageMetaInformation(Some(rs.long(im.c("id"))), rs.stringOpt(im.c("external_id")), meta.titles, meta.alttexts, meta.imageUrl, meta.size, meta.contentType,
       meta.copyright, meta.tags, meta.captions, meta.updatedBy, meta.updated)
   }
 }

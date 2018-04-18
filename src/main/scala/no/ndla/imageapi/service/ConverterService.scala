@@ -64,17 +64,18 @@ trait ConverterService {
       val caption = findByLanguageOrBestEffort(imageMeta.captions, language).map(asApiCaption).getOrElse(api.ImageCaption("", defaultLanguage))
 
       Some(api.ImageMetaInformationV2(
-        imageMeta.id.get.toString,
-        baseUrl + imageMeta.id.get,
-        title,
-        alttext,
-        asApiUrl(imageMeta.imageUrl),
-        imageMeta.size,
-        imageMeta.contentType,
-        withAgreementCopyright(asApiCopyright(imageMeta.copyright)),
-        tags,
-        caption,
-        getSupportedLanguages(imageMeta)))
+        id = imageMeta.id.get.toString,
+        externalId = imageMeta.externalId,
+        metaUrl = baseUrl + imageMeta.id.get,
+        title = title,
+        alttext = alttext,
+        imageUrl = asApiUrl(imageMeta.imageUrl),
+        size = imageMeta.size,
+        contentType = imageMeta.contentType,
+        copyright = withAgreementCopyright(asApiCopyright(imageMeta.copyright)),
+        tags = tags,
+        caption = caption,
+        supportedLanguages = getSupportedLanguages(imageMeta)))
     }
 
     def withAgreementCopyright(image: domain.ImageMetaInformation): domain.ImageMetaInformation = {
@@ -122,6 +123,7 @@ trait ConverterService {
     def asDomainImageMetaInformationV2(imageMeta: api.NewImageMetaInformationV2, image: domain.Image): domain.ImageMetaInformation = {
       domain.ImageMetaInformation(
         None,
+        Option(imageMeta.externalId),
         Seq(asDomainTitle(imageMeta.title, imageMeta.language)),
         Seq(asDomainAltText(imageMeta.alttext, imageMeta.language)),
         parse(image.fileName).toString,
