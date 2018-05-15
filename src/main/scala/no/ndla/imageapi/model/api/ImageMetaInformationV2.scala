@@ -1,6 +1,7 @@
 package no.ndla.imageapi.model.api
 
 import io.digitallibrary.language.model.LanguageTag
+import no.ndla.imageapi.model.domain.RawImageQueryParameters
 import org.scalatra.swagger.annotations.ApiModel
 import org.scalatra.swagger.runtime.annotations.ApiModelProperty
 
@@ -18,4 +19,6 @@ case class ImageMetaInformationV2(@(ApiModelProperty@field)(description = "The u
                                   @(ApiModelProperty@field)(description = "Describes the copyright information for the image") copyright: Copyright,
                                   @(ApiModelProperty@field)(description = "Searchable tags for the image") tags: ImageTag,
                                   @(ApiModelProperty@field)(description = "Searchable caption for the image") caption: ImageCaption,
-                                  @(ApiModelProperty@field)(description = "Supported languages for the image title, alt-text, tags and caption.") supportedLanguages: Seq[LanguageTag])
+                                  @(ApiModelProperty@field)(description = "Supported languages for the image title, alt-text, tags and caption.") supportedLanguages: Seq[LanguageTag],
+                                  @(ApiModelProperty@field)(description = "Stored query parameters for given aspect ratios") rawImageQueryParameters: Option[Map[String, RawImageQueryParameters]]
+                                 )

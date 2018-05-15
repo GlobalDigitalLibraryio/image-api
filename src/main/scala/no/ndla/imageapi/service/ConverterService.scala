@@ -15,6 +15,7 @@ import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.auth.User
 import no.ndla.imageapi.model.Language._
+import no.ndla.imageapi.model.domain.RawImageQueryParameters
 import no.ndla.imageapi.model.{api, domain}
 
 trait ConverterService {
@@ -48,15 +49,15 @@ trait ConverterService {
       api.ImageAltText(domainImageAltText.alttext, domainImageAltText.language)
     }
 
-    def asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationV2] = {
-      asImageMetaInformationV2(domainImageMetaInformation, language, ApplicationUrl.get)
+    def asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag, rawImageQueryParameters: Option[Map[String, RawImageQueryParameters]] = None): Option[api.ImageMetaInformationV2] = {
+      asImageMetaInformationV2(domainImageMetaInformation, language, ApplicationUrl.get, rawImageQueryParameters)
     }
 
-    def asApiImageMetaInformationWithDomainUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationV2] = {
-      asImageMetaInformationV2(domainImageMetaInformation, language, ImageApiProperties.ImageApiUrlBase.replace("v1", "v2"))
+    def asApiImageMetaInformationWithDomainUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag, rawImageQueryParameters: Option[Map[String, RawImageQueryParameters]] = None): Option[api.ImageMetaInformationV2] = {
+      asImageMetaInformationV2(domainImageMetaInformation, language, ImageApiProperties.ImageApiUrlBase.replace("v1", "v2"), rawImageQueryParameters)
     }
 
-    private def asImageMetaInformationV2(imageMeta: domain.ImageMetaInformation, language: LanguageTag, baseUrl: String): Option[api.ImageMetaInformationV2] = {
+    private def asImageMetaInformationV2(imageMeta: domain.ImageMetaInformation, language: LanguageTag, baseUrl: String, rawImageQueryParameters: Option[Map[String, RawImageQueryParameters]] = None): Option[api.ImageMetaInformationV2] = {
       val defaultLanguage = DefaultLanguage
       val title = findByLanguageOrBestEffort(imageMeta.titles, language).map(asApiImageTitle).getOrElse(api.ImageTitle("", defaultLanguage))
       val alttext = findByLanguageOrBestEffort(imageMeta.alttexts, language).map(asApiImageAltText).getOrElse(api.ImageAltText("", defaultLanguage))
@@ -75,7 +76,9 @@ trait ConverterService {
         copyright = withAgreementCopyright(asApiCopyright(imageMeta.copyright)),
         tags = tags,
         caption = caption,
-        supportedLanguages = getSupportedLanguages(imageMeta)))
+        supportedLanguages = getSupportedLanguages(imageMeta),
+        rawImageQueryParameters = rawImageQueryParameters
+      ))
     }
 
     def withAgreementCopyright(image: domain.ImageMetaInformation): domain.ImageMetaInformation = {

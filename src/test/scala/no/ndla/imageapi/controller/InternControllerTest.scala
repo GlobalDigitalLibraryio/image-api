@@ -41,7 +41,8 @@ class InternControllerTest extends UnitSuite with ScalatraSuite with TestEnviron
     api.Copyright(api.License("", "", None), "", List(), List(), List(), None, None, None),
     ImageTag(Seq.empty, nob),
     ImageCaption("", nob),
-    Seq())
+    Seq(),
+    None)
 
   val DefaultDomainImageMetaInformation = domain.ImageMetaInformation(Some(1), None, List(), List(), "test.jpg", 0, "", domain.Copyright(domain.License("", "", None), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
 
