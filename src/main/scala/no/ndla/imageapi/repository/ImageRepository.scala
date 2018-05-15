@@ -11,7 +11,7 @@ package no.ndla.imageapi.repository
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.imageapi.controller.LanguageTagSerializer
 import no.ndla.imageapi.integration.DataSource
-import no.ndla.imageapi.model.domain.ImageMetaInformation
+import no.ndla.imageapi.model.domain.{ImageMetaInformation, RawImageQueryParameters, StoredParameters}
 import no.ndla.imageapi.service.ConverterService
 import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
@@ -23,6 +23,13 @@ trait ImageRepository {
   val imageRepository: ImageRepository
 
   class ImageRepository extends LazyLogging {
+
+    def getCropParametersFor(imageName: String, forRatio: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[RawImageQueryParameters] = {
+      val im = StoredParameters.syntax("im")
+      sql"select ${im.result.*} from ${StoredParameters.as(im)} where image_name = ${imageName} and for_ratio = ${forRatio}"
+        .map(StoredParameters(im)).single().apply().map(_.parameters)
+    }
+
     implicit val formats = org.json4s.DefaultFormats + ImageMetaInformation.JSonSerializer + new LanguageTagSerializer
 
     def withId(id: Long): Option[ImageMetaInformation] = {

@@ -2,15 +2,16 @@ package no.ndla.imageapi.controller
 
 import javax.servlet.http.HttpServletRequest
 
+import com.netaporter.uri.Uri.{parse => uriParse}
 import no.ndla.imageapi.model.api.Error
 import no.ndla.imageapi.model.domain.ImageStream
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.{ImageConverter, ImageStorageService}
+import org.json4s.native.Serialization.{write, _}
+import org.scalatra.Ok
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger.SwaggerSupportSyntax.OperationBuilder
 import org.scalatra.swagger.{Parameter, ResponseMessage, Swagger, SwaggerSupport}
-import com.netaporter.uri.Uri.{parse => uriParse}
-import org.scalatra.Ok
 
 import scala.util.{Failure, Success, Try}
 
@@ -38,7 +39,8 @@ trait RawController {
       queryParam[Option[Int]]("cropEndY").description("The end image coordinate Y, in percent (0 to 100), specifying the crop end position. If used the other crop parameters must also be supplied"),
       queryParam[Option[Int]]("focalX").description("The end image coordinate X, in percent (0 to 100), specifying the focal point. If used the other focal point parameter, width and/or height, must also be supplied"),
       queryParam[Option[Int]]("focalY").description("The end image coordinate Y, in percent (0 to 100), specifying the focal point. If used the other focal point parameter, width and/or height, must also be supplied"),
-      queryParam[Option[Double]]("ratio").description("The wanted aspect ratio, defined as width/height. To be used together with the focal parameters. If used the width and height is ignored and derived from the aspect ratio instead.")
+      queryParam[Option[Double]]("ratio").description("The wanted aspect ratio, defined as width/height. To be used together with the focal parameters. If used the width and height is ignored and derived from the aspect ratio instead."),
+      queryParam[Option[Double]]("storedRatio").description("Use stored crop and focal point parameters for given aspect ratio, or use defaults instead.")
     )
 
     val getImageFile = new OperationBuilder(ValueDataType("file", Some("binary")))
@@ -77,9 +79,11 @@ trait RawController {
     private def getRawImage(imageName: String): ImageStream = {
       imageStorage.get(imageName) match {
         case Success(img) if img.format.equals("gif") => img
-        case Success(img) => {
-          crop(img).flatMap(dynamicCrop).flatMap(resize).get
-        }
+        case Success(img) =>
+          doubleOrNone("storedRatio").flatMap(storedRatio => imageRepository.getCropParametersFor(imageName, storedRatio.toString)) match {
+            case Some(cropParameters) => redirect(url(s"/$imageName", read[Map[String, String]](write(cropParameters))))
+            case None => crop(img).flatMap(dynamicCrop).flatMap(resize).get
+          }
         case Failure(e) => throw e
       }
     }

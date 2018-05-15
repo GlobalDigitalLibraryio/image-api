@@ -41,6 +41,33 @@ case class ImageMetaInformation(
   updated: Date
 )
 
+case class RawImageQueryParameters(width: Option[Int], height: Option[Int], cropStartX: Option[Int], cropStartY: Option[Int], cropEndX: Option[Int], cropEndY: Option[Int], focalX: Option[Int], focalY: Option[Int], ratio: Option[String])
+case class StoredRawImageQueryParameters(imageName: String, forRatio: String, parameters: RawImageQueryParameters)
+
+
+object StoredParameters extends SQLSyntaxSupport[StoredRawImageQueryParameters] {
+  implicit val formats: Formats = org.json4s.DefaultFormats
+  override val tableName = "parameters"
+  override val schemaName = Some(ImageApiProperties.MetaSchema)
+  def apply(im: SyntaxProvider[StoredRawImageQueryParameters])(rs: WrappedResultSet): StoredRawImageQueryParameters = apply(im.resultName)(rs)
+  def apply(im: ResultName[StoredRawImageQueryParameters])(rs: WrappedResultSet): StoredRawImageQueryParameters = {
+    StoredRawImageQueryParameters(
+      imageName = rs.string(im.c("image_name")),
+      forRatio = rs.string(im.c("for_ratio")),
+      parameters = RawImageQueryParameters(
+        width = rs.intOpt(im.c("width")),
+        height = rs.intOpt(im.c("height")),
+        cropStartX = rs.intOpt(im.c("crop_start_x")),
+        cropStartY = rs.intOpt(im.c("crop_start_y")),
+        cropEndX = rs.intOpt(im.c("crop_end_x")),
+        cropEndY = rs.intOpt(im.c("crop_end_y")),
+        focalX = rs.intOpt(im.c("focal_x")),
+        focalY = rs.intOpt(im.c("focal_y")),
+        ratio = rs.stringOpt(im.c("ratio"))
+      ))
+  }
+}
+
 object ImageMetaInformation extends SQLSyntaxSupport[ImageMetaInformation] {
   implicit val formats: Formats = org.json4s.DefaultFormats + new LanguageTagSerializer
   override val tableName = "imagemetadata"
