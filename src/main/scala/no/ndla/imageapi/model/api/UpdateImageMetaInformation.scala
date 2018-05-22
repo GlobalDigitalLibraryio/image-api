@@ -7,6 +7,7 @@
 
 package no.ndla.imageapi.model.api
 
+import no.ndla.imageapi.model.domain.StoredRawImageQueryParameters
 import org.scalatra.swagger.annotations.{ApiModel, ApiModelProperty}
 
 import scala.annotation.meta.field
@@ -17,5 +18,6 @@ case class UpdateImageMetaInformation(@(ApiModelProperty@field)(description = "B
                                       @(ApiModelProperty@field)(description = "Alternative text for the image") alttext: Option[String],
                                       @(ApiModelProperty@field)(description = "Describes the copyright information for the image") copyright: Option[Copyright],
                                       @(ApiModelProperty@field)(description = "Searchable tags for the image") tags: Option[Seq[String]],
-                                      @(ApiModelProperty@field)(description = "Caption for the image") caption: Option[String]
+                                      @(ApiModelProperty@field)(description = "Caption for the image") caption: Option[String],
+                                      @(ApiModelProperty@field)(description = "Query parameters to store for a given aspect ratio") queryParameters: Option[StoredRawImageQueryParameters]
                                      )

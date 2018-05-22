@@ -77,11 +77,12 @@ trait RawController {
     }
 
     private def getRawImage(imageName: String): ImageStream = {
+      val imageUrl = s"/$imageName"
       imageStorage.get(imageName) match {
         case Success(img) if img.format.equals("gif") => img
         case Success(img) =>
-          doubleOrNone("storedRatio").flatMap(storedRatio => imageRepository.getCropParametersFor(imageName, storedRatio.toString)) match {
-            case Some(cropParameters) => redirect(url(s"/$imageName", read[Map[String, String]](write(cropParameters))))
+          doubleOrNone("storedRatio").flatMap(storedRatio => imageRepository.getCropParametersFor(imageUrl, storedRatio.toString)) match {
+            case Some(cropParameters) => redirect(url(imageUrl, read[Map[String, String]](write(cropParameters))))
             case None => crop(img).flatMap(dynamicCrop).flatMap(resize).get
           }
         case Failure(e) => throw e

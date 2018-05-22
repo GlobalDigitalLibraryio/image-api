@@ -24,9 +24,69 @@ trait ImageRepository {
 
   class ImageRepository extends LazyLogging {
 
-    def getCropParameters(imageName: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[Map[String, RawImageQueryParameters]] = {
+    def insertOrUpdateQuery(imageUrl: String, parameters: StoredRawImageQueryParameters)(implicit session: DBSession = AutoSession): StoredRawImageQueryParameters = {
+      getCropParametersFor(imageUrl, parameters.forRatio) match {
+        case Some(_) => updateQuery(imageUrl, parameters)
+        case None => insertQuery(imageUrl, parameters)
+      }
+    }
+
+    def insertQuery(imageUrl: String, parameters: StoredRawImageQueryParameters)(implicit session: DBSession = AutoSession): StoredRawImageQueryParameters = {
+      val c = StoredParameters.column
+      val p = parameters.parameters
+      val startRevision = 1
+      val count = QueryDSL.insertInto(StoredParameters).namedValues(
+        c.c("image_url") -> imageUrl,
+        c.c("for_ratio") -> parameters.forRatio,
+        c.c("width") -> p.width,
+        c.c("height") -> p.height,
+        c.c("crop_start_x") -> p.cropStartX,
+        c.c("crop_start_y") -> p.cropStartY,
+        c.c("crop_end_x") -> p.cropEndX,
+        c.c("crop_end_y") -> p.cropEndY,
+        c.c("focal_x") -> p.focalX,
+        c.c("focal_y") -> p.focalY,
+        c.c("ratio") -> p.ratio,
+        c.revision -> startRevision
+      ).toSQL.update().apply()
+      if (count != 1) {
+        throw new RuntimeException(s"Failed to insert raw image query parameters for imageUrl=$imageUrl")
+      } else {
+        parameters.copy(revision = Some(startRevision))
+      }
+    }
+
+    def updateQuery(imageUrl: String, parameters: StoredRawImageQueryParameters)(implicit session: DBSession = AutoSession): StoredRawImageQueryParameters = {
+      val c = StoredParameters.column
+      val p = parameters.parameters
+      val nextRevision = parameters.revision.map(_ + 1).getOrElse(1)
+      val count = QueryDSL.update(StoredParameters).set(
+        c.c("width") -> p.width,
+        c.c("height") -> p.height,
+        c.c("crop_start_x") -> p.cropStartX,
+        c.c("crop_start_y") -> p.cropStartY,
+        c.c("crop_end_x") -> p.cropEndX,
+        c.c("crop_end_y") -> p.cropEndY,
+        c.c("focal_x") -> p.focalX,
+        c.c("focal_y") -> p.focalY,
+        c.c("ratio") -> p.ratio,
+        c.revision -> nextRevision
+      ).where
+        .eq(c.imageUrl, imageUrl).and
+        .eq(c.forRatio, parameters.forRatio).and
+        .eq(c.revision, parameters.revision)
+        .toSQL.update().apply()
+      if (count != 1) {
+        throw new OptimisticLockException()
+      } else {
+        parameters.copy(revision = Some(nextRevision))
+      }
+    }
+
+
+    def getCropParameters(imageUrl: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[Map[String, RawImageQueryParameters]] = {
       val im = StoredParameters.syntax("im")
-      val results: Seq[StoredRawImageQueryParameters] = sql"select ${im.result.*} from ${StoredParameters.as(im)} where image_name = ${imageName}"
+      val results: Seq[StoredRawImageQueryParameters] = sql"select ${im.result.*} from ${StoredParameters.as(im)} where image_url = ${imageUrl}"
         .map(StoredParameters(im)).list().apply()
       if (results.nonEmpty) {
         Some(results.map(p => p.forRatio -> p.parameters).toMap)
@@ -35,9 +95,9 @@ trait ImageRepository {
       }
     }
 
-    def getCropParametersFor(imageName: String, forRatio: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[RawImageQueryParameters] = {
+    def getCropParametersFor(imageUrl: String, forRatio: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[RawImageQueryParameters] = {
       val im = StoredParameters.syntax("im")
-      sql"select ${im.result.*} from ${StoredParameters.as(im)} where image_name = ${imageName} and for_ratio = ${forRatio}"
+      sql"select ${im.result.*} from ${StoredParameters.as(im)} where image_url = ${imageUrl} and for_ratio = ${forRatio}"
         .map(StoredParameters(im)).single().apply().map(_.parameters)
     }
 

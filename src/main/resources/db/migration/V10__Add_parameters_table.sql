@@ -1,5 +1,5 @@
 create table parameters (
-  image_name text not null,
+  image_url text not null,
   for_ratio text not null,
   revision integer not null default 1,
   width int,
@@ -11,5 +11,5 @@ create table parameters (
   focal_x int,
   focal_y int,
   ratio text,
-  primary key (image_name, ratio)
+  primary key (image_url, for_ratio)
 );

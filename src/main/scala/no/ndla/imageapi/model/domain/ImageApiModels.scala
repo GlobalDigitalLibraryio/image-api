@@ -42,7 +42,7 @@ case class ImageMetaInformation(
 )
 
 case class RawImageQueryParameters(width: Option[Int], height: Option[Int], cropStartX: Option[Int], cropStartY: Option[Int], cropEndX: Option[Int], cropEndY: Option[Int], focalX: Option[Int], focalY: Option[Int], ratio: Option[String])
-case class StoredRawImageQueryParameters(imageName: String, forRatio: String, parameters: RawImageQueryParameters)
+case class StoredRawImageQueryParameters(imageUrl: String, forRatio: String, revision: Option[Int], parameters: RawImageQueryParameters)
 
 
 object StoredParameters extends SQLSyntaxSupport[StoredRawImageQueryParameters] {
@@ -52,8 +52,9 @@ object StoredParameters extends SQLSyntaxSupport[StoredRawImageQueryParameters] 
   def apply(im: SyntaxProvider[StoredRawImageQueryParameters])(rs: WrappedResultSet): StoredRawImageQueryParameters = apply(im.resultName)(rs)
   def apply(im: ResultName[StoredRawImageQueryParameters])(rs: WrappedResultSet): StoredRawImageQueryParameters = {
     StoredRawImageQueryParameters(
-      imageName = rs.string(im.c("image_name")),
+      imageUrl = rs.string(im.c("image_url")),
       forRatio = rs.string(im.c("for_ratio")),
+      revision = rs.intOpt(im.c("revision")),
       parameters = RawImageQueryParameters(
         width = rs.intOpt(im.c("width")),
         height = rs.intOpt(im.c("height")),
