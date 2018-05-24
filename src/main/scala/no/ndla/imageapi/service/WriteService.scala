@@ -80,12 +80,10 @@ trait WriteService {
         case Some(existing) => Success(mergeImages(existing, image))
       }
 
-      for {
-        updated <- updateImage
-        validated <- validationService.validate(updated)
-        persisted = imageRepository.update(validated, imageId)
-        indexed <- indexService.indexDocument(persisted)
-      } yield converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(indexed, LanguageTag(image.language)).get
+      updateImage.flatMap(validationService.validate)
+        .map(imageMeta => imageRepository.update(imageMeta, imageId))
+        .flatMap(indexService.indexDocument)
+        .map(updatedImage => converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(updatedImage, LanguageTag(image.language)).get)
     }
 
     private[service] def mergeLanguageFields[A <: LanguageField[String]](existing: Seq[A], updated: Seq[A]): Seq[A] = {

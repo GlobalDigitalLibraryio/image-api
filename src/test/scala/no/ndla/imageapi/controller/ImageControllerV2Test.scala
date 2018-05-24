@@ -121,7 +121,6 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
     val expectedBody = s"""{"id":"1","metaUrl":"$testUrl","title":{"title":"Elg i busk","language":"nb"},"alttext":{"alttext":"Elg i busk","language":"nb"},"imageUrl":"$testUrl","size":2865539,"contentType":"image/jpeg","copyright":{"license":{"license":"by-nc-sa","description":"Creative Commons Attribution-NonCommercial-ShareAlike 2.0 Generic","url":"https://creativecommons.org/licenses/by-nc-sa/2.0/"},"origin":"http://www.scanpix.no","creators":[{"type":"Fotograf","name":"Test Testesen"}],"processors":[{"type":"Redaksjonelt","name":"Kåre Knegg"}],"rightsholders":[{"type":"Leverandør","name":"Leverans Leveransensen"}]},"tags":{"tags":["rovdyr","elg"],"language":"nb"},"caption":{"caption":"Elg i busk","language":"nb"},"supportedLanguages":["nb"]}"""
     val expectedObject = JsonParser.parse(expectedBody).extract[api.ImageMetaInformationV2]
     when(imageRepository.withId(1)).thenReturn(Option(TestData.elg))
-    when(imageRepository.getCropParameters(any[String])).thenReturn(None)
 
     get("/1") {
       status should equal(200)
@@ -141,7 +140,6 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
       List(ImageTag(List("rovdyr", "elg"), nob)), List(ImageCaption("Elg i busk", nob)), "ndla124", TestData.updated())
 
     when(imageRepository.withId(1)).thenReturn(Option(agreementElg))
-    when(imageRepository.getCropParameters(any[String])).thenReturn(None)
 
     get("/1") {
       status should equal(200)

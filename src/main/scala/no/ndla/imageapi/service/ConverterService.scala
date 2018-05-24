@@ -75,8 +75,7 @@ trait ConverterService {
         copyright = withAgreementCopyright(asApiCopyright(imageMeta.copyright)),
         tags = tags,
         caption = caption,
-        supportedLanguages = getSupportedLanguages(imageMeta)
-      ))
+        supportedLanguages = getSupportedLanguages(imageMeta)))
     }
 
     def withAgreementCopyright(image: domain.ImageMetaInformation): domain.ImageMetaInformation = {
