@@ -13,6 +13,7 @@ import java.util.Date
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.controller.LanguageTagSerializer
+import no.ndla.imageapi.model.api.{RawImageQueryParameters, StoredParameters}
 import org.json4s.{FieldSerializer, Formats}
 import org.json4s.FieldSerializer._
 import org.json4s.native.Serialization._
@@ -41,21 +42,17 @@ case class ImageMetaInformation(
   updated: Date
 )
 
-case class RawImageQueryParameters(width: Option[Int], height: Option[Int], cropStartX: Option[Int], cropStartY: Option[Int], cropEndX: Option[Int], cropEndY: Option[Int], focalX: Option[Int], focalY: Option[Int], ratio: Option[String])
-case class StoredRawImageQueryParameters(imageUrl: String, forRatio: String, revision: Option[Int], parameters: RawImageQueryParameters)
-
-
-object StoredParameters extends SQLSyntaxSupport[StoredRawImageQueryParameters] {
+object ParameterInformation extends SQLSyntaxSupport[StoredParameters] {
   implicit val formats: Formats = org.json4s.DefaultFormats
   override val tableName = "parameters"
   override val schemaName = Some(ImageApiProperties.MetaSchema)
-  def apply(im: SyntaxProvider[StoredRawImageQueryParameters])(rs: WrappedResultSet): StoredRawImageQueryParameters = apply(im.resultName)(rs)
-  def apply(im: ResultName[StoredRawImageQueryParameters])(rs: WrappedResultSet): StoredRawImageQueryParameters = {
-    StoredRawImageQueryParameters(
+  def apply(im: SyntaxProvider[StoredParameters])(rs: WrappedResultSet): StoredParameters = apply(im.resultName)(rs)
+  def apply(im: ResultName[StoredParameters])(rs: WrappedResultSet): StoredParameters = {
+    StoredParameters(
       imageUrl = rs.string(im.c("image_url")),
       forRatio = rs.string(im.c("for_ratio")),
       revision = rs.intOpt(im.c("revision")),
-      parameters = RawImageQueryParameters(
+      rawImageQueryParameters = RawImageQueryParameters(
         width = rs.intOpt(im.c("width")),
         height = rs.intOpt(im.c("height")),
         cropStartX = rs.intOpt(im.c("crop_start_x")),
@@ -64,8 +61,8 @@ object StoredParameters extends SQLSyntaxSupport[StoredRawImageQueryParameters] 
         cropEndY = rs.intOpt(im.c("crop_end_y")),
         focalX = rs.intOpt(im.c("focal_x")),
         focalY = rs.intOpt(im.c("focal_y")),
-        ratio = rs.stringOpt(im.c("ratio"))
-      ))
+        ratio = rs.stringOpt(im.c("ratio")))
+    )
   }
 }
 

@@ -11,7 +11,8 @@ package no.ndla.imageapi.repository
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.imageapi.controller.LanguageTagSerializer
 import no.ndla.imageapi.integration.DataSource
-import no.ndla.imageapi.model.domain.{ImageMetaInformation, RawImageQueryParameters, StoredParameters, StoredRawImageQueryParameters}
+import no.ndla.imageapi.model.api.StoredParameters
+import no.ndla.imageapi.model.domain.{ImageMetaInformation, ParameterInformation}
 import no.ndla.imageapi.service.ConverterService
 import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
@@ -24,29 +25,29 @@ trait ImageRepository {
 
   class ImageRepository extends LazyLogging {
 
-    def insertOrUpdateQuery(imageUrl: String, parameters: StoredRawImageQueryParameters)(implicit session: DBSession = AutoSession): StoredRawImageQueryParameters = {
-      getCropParametersFor(imageUrl, parameters.forRatio) match {
-        case Some(_) => updateQuery(imageUrl, parameters)
-        case None => insertQuery(imageUrl, parameters)
+    def insertOrUpdateStoredParameters(imageUrl: String, parameters: StoredParameters)(implicit session: DBSession = AutoSession): StoredParameters = {
+      getStoredParametersFor(imageUrl, parameters.forRatio) match {
+        case Some(_) => updateStoredParameters(imageUrl, parameters)
+        case None => insertStoredParameters(imageUrl, parameters)
       }
     }
 
-    def insertQuery(imageUrl: String, parameters: StoredRawImageQueryParameters)(implicit session: DBSession = AutoSession): StoredRawImageQueryParameters = {
-      val c = StoredParameters.column
-      val p = parameters.parameters
+    def insertStoredParameters(imageUrl: String, parameters: StoredParameters)(implicit session: DBSession = AutoSession): StoredParameters = {
+      val c = ParameterInformation.column
       val startRevision = 1
-      val count = QueryDSL.insertInto(StoredParameters).namedValues(
+      val r = parameters.rawImageQueryParameters
+      val count = QueryDSL.insertInto(ParameterInformation).namedValues(
         c.c("image_url") -> imageUrl,
         c.c("for_ratio") -> parameters.forRatio,
-        c.c("width") -> p.width,
-        c.c("height") -> p.height,
-        c.c("crop_start_x") -> p.cropStartX,
-        c.c("crop_start_y") -> p.cropStartY,
-        c.c("crop_end_x") -> p.cropEndX,
-        c.c("crop_end_y") -> p.cropEndY,
-        c.c("focal_x") -> p.focalX,
-        c.c("focal_y") -> p.focalY,
-        c.c("ratio") -> p.ratio,
+        c.c("width") -> r.width,
+        c.c("height") -> r.height,
+        c.c("crop_start_x") -> r.cropStartX,
+        c.c("crop_start_y") -> r.cropStartY,
+        c.c("crop_end_x") -> r.cropEndX,
+        c.c("crop_end_y") -> r.cropEndY,
+        c.c("focal_x") -> r.focalX,
+        c.c("focal_y") -> r.focalY,
+        c.c("ratio") -> r.ratio,
         c.revision -> startRevision
       ).toSQL.update().apply()
       if (count != 1) {
@@ -56,20 +57,20 @@ trait ImageRepository {
       }
     }
 
-    def updateQuery(imageUrl: String, parameters: StoredRawImageQueryParameters)(implicit session: DBSession = AutoSession): StoredRawImageQueryParameters = {
-      val c = StoredParameters.column
-      val p = parameters.parameters
+    def updateStoredParameters(imageUrl: String, parameters: StoredParameters)(implicit session: DBSession = AutoSession): StoredParameters = {
+      val c = ParameterInformation.column
       val nextRevision = parameters.revision.map(_ + 1).getOrElse(1)
-      val count = QueryDSL.update(StoredParameters).set(
-        c.c("width") -> p.width,
-        c.c("height") -> p.height,
-        c.c("crop_start_x") -> p.cropStartX,
-        c.c("crop_start_y") -> p.cropStartY,
-        c.c("crop_end_x") -> p.cropEndX,
-        c.c("crop_end_y") -> p.cropEndY,
-        c.c("focal_x") -> p.focalX,
-        c.c("focal_y") -> p.focalY,
-        c.c("ratio") -> p.ratio,
+      val r = parameters.rawImageQueryParameters
+      val count = QueryDSL.update(ParameterInformation).set(
+        c.c("width") -> r.width,
+        c.c("height") -> r.height,
+        c.c("crop_start_x") -> r.cropStartX,
+        c.c("crop_start_y") -> r.cropStartY,
+        c.c("crop_end_x") -> r.cropEndX,
+        c.c("crop_end_y") -> r.cropEndY,
+        c.c("focal_x") -> r.focalX,
+        c.c("focal_y") -> r.focalY,
+        c.c("ratio") -> r.ratio,
         c.revision -> nextRevision
       ).where
         .eq(c.imageUrl, imageUrl).and
@@ -83,22 +84,21 @@ trait ImageRepository {
       }
     }
 
-
-    def getCropParameters(imageUrl: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[Map[String, RawImageQueryParameters]] = {
-      val im = StoredParameters.syntax("im")
-      val results: Seq[StoredRawImageQueryParameters] = sql"select ${im.result.*} from ${StoredParameters.as(im)} where image_url = ${imageUrl}"
-        .map(StoredParameters(im)).list().apply()
+    def getStoredParameters(imageUrl: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[Seq[StoredParameters]] = {
+      val im = ParameterInformation.syntax("im")
+      val results: Seq[StoredParameters] = sql"select ${im.result.*} from ${ParameterInformation.as(im)} where image_url = ${imageUrl}"
+        .map(ParameterInformation(im)).list().apply()
       if (results.nonEmpty) {
-        Some(results.map(p => p.forRatio -> p.parameters).toMap)
+        Some(results)
       } else {
         None
       }
     }
 
-    def getCropParametersFor(imageUrl: String, forRatio: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[RawImageQueryParameters] = {
-      val im = StoredParameters.syntax("im")
-      sql"select ${im.result.*} from ${StoredParameters.as(im)} where image_url = ${imageUrl} and for_ratio = ${forRatio}"
-        .map(StoredParameters(im)).single().apply().map(_.parameters)
+    def getStoredParametersFor(imageUrl: String, forRatio: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[StoredParameters] = {
+      val im = ParameterInformation.syntax("im")
+      sql"select ${im.result.*} from ${ParameterInformation.as(im)} where image_url = ${imageUrl} and for_ratio = ${forRatio}"
+        .map(ParameterInformation(im)).single().apply()
     }
 
     implicit val formats = org.json4s.DefaultFormats + ImageMetaInformation.JSonSerializer + new LanguageTagSerializer

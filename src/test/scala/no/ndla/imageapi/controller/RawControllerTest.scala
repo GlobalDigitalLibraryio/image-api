@@ -5,7 +5,7 @@ import javax.imageio.ImageIO
 
 import no.ndla.imageapi.TestData.{NdlaLogoGIFImage, NdlaLogoImage}
 import no.ndla.imageapi.model.ImageNotFoundException
-import no.ndla.imageapi.model.domain.RawImageQueryParameters
+import no.ndla.imageapi.model.api.{RawImageQueryParameters, StoredParameters}
 import no.ndla.imageapi.{ImageSwagger, TestData, TestEnvironment, UnitSuite}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -273,15 +273,15 @@ class RawControllerTest extends UnitSuite with ScalatraSuite with TestEnvironmen
   }
 
   test("That GET /123.jpg?storedRatio=0.81 redirects with stored parameters when they exist") {
-    val returnParameters = RawImageQueryParameters(width = None, height = None, cropStartX = Some(50), cropStartY = Some(10), cropEndX = None, cropEndY = None, focalX = Some(50), focalY = Some(60), ratio = Some("0.81"))
-    when(imageRepository.getCropParametersFor("/123.jpg", "0.81")).thenReturn(Some(returnParameters))
+    val returnParameters = StoredParameters(imageUrl = "/123.jpg", forRatio = "0.81", revision = Some(1), rawImageQueryParameters = RawImageQueryParameters(width = None, height = None, cropStartX = Some(50), cropStartY = Some(10), cropEndX = None, cropEndY = None, focalX = Some(50), focalY = Some(60), ratio = Some("0.81")))
+    when(imageRepository.getStoredParametersFor("/123.jpg", "0.81")).thenReturn(Some(returnParameters))
     get("/123.jpg?storedRatio=0.81") {
       status should equal (302)
       header.get("Location").map(_.endsWith("/123.jpg?cropStartX=50&focalX=50&ratio=0.81&cropStartY=10&focalY=60")) shouldBe Some(true)
     }
   }
   test("That GET /123.jpg?storedRatio=0.13 ignores parameter storedRatio when stored parameters doesn't exist for that ratio") {
-    when(imageRepository.getCropParametersFor("/123.jpg", "0.13")).thenReturn(None)
+    when(imageRepository.getStoredParametersFor("/123.jpg", "0.13")).thenReturn(None)
     get("/123.jpg?storedRatio=0.13") {
       status should equal (200)
     }

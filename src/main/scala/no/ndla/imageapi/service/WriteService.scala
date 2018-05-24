@@ -5,7 +5,7 @@ import java.io.ByteArrayInputStream
 import com.typesafe.scalalogging.LazyLogging
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.auth.User
-import no.ndla.imageapi.model.api.{ImageMetaInformationV2, NewImageMetaInformationV2, UpdateImageMetaInformation}
+import no.ndla.imageapi.model.api.{ImageMetaInformationV2, NewImageMetaInformationV2, StoredParameters, UpdateImageMetaInformation}
 import no.ndla.imageapi.model.domain.{Image, ImageMetaInformation, LanguageField}
 import no.ndla.imageapi.model.{ImageNotFoundException, ValidationException, domain}
 import no.ndla.imageapi.repository.ImageRepository
@@ -19,6 +19,13 @@ trait WriteService {
   val writeService: WriteService
 
   class WriteService extends LazyLogging {
+    def storeParameters(imageUrl: String, parameters: StoredParameters): Try[StoredParameters] = {
+      validationService.validateStoredParameters(parameters) match {
+        case Some(validationMessage) => Failure(new ValidationException(errors = Seq(validationMessage)))
+        case None => Try(imageRepository.insertOrUpdateStoredParameters(imageUrl, parameters))
+      }
+    }
+
     def storeNewImage(newImage: NewImageMetaInformationV2, file: FileItem): Try[ImageMetaInformation] = {
       validationService.validateImageFile(file) match {
         case Some(validationMessage) => return Failure(new ValidationException(errors = Seq(validationMessage)))

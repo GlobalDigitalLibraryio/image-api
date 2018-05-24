@@ -1,6 +1,7 @@
 package no.ndla.imageapi.service
 
 import no.ndla.imageapi.ImageApiProperties
+import no.ndla.imageapi.model.api.StoredParameters
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.model.{ValidationException, ValidationMessage}
 import no.ndla.mapping.License.getLicense
@@ -14,6 +15,17 @@ trait ValidationService {
   val validationService: ValidationService
 
   class ValidationService {
+    def validateStoredParameters(parameters: StoredParameters): Option[ValidationMessage] = {
+
+      def validPercentage(n: Int): Boolean = n >= 0 && n <= 100
+      val r = parameters.rawImageQueryParameters
+      if (!Seq(r.cropStartX, r.cropStartY, r.cropEndX, r.cropEndY, r.focalX, r.focalY).flatten.forall(validPercentage)) {
+        Some(ValidationMessage("rawImageQueryParameters", "Percentage values must be in the range [0, 100]"))
+      } else {
+        None
+      }
+    }
+
     def validateImageFile(imageFile: FileItem): Option[ValidationMessage] = {
       val validFileExtensions = Seq(".jpg", ".png", ".jpg", ".jpeg", ".bmp", ".gif", ".svg")
       if (!hasValidFileExtension(imageFile.name.toLowerCase, validFileExtensions))
