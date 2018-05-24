@@ -39,8 +39,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     Copyright(License("by", "", None), "", Seq.empty, Seq.empty, Seq.empty, None, None, None),
     Seq.empty,
     "",
-    LanguageTag("en"),
-    None
+    LanguageTag("en")
   )
 
   def updated(): Date = (new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC)).toDate
@@ -211,7 +210,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       Some("AltText"),
       None,
       None,
-      None,
       None
     )
 
@@ -234,7 +232,6 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       "nb",
       Some("Title"),
       Some("AltText"),
-      None,
       None,
       None,
       None
@@ -261,8 +258,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       Some("AltText"),
       Some(Copyright(License("testLic", "License for testing", None), "test", List(Author("Opphavsmann", "Testerud")), List(), List(), None, None, None)),
       Some(List("a", "b", "c")),
-      Some("Caption"),
-      None
+      Some("Caption")
     )
 
     val expectedResult = existing.copy(

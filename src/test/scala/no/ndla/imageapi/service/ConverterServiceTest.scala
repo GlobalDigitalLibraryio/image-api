@@ -58,7 +58,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("That asApiImageMetaInformationWithApplicationUrlAndSingleLanguage returns links with applicationUrl") {
     setApplicationUrl()
 
-    val api = converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(DefaultImageMetaInformation, english, None)
+    val api = converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(DefaultImageMetaInformation, english)
     api.get.metaUrl should equal ("http://image-api/v2/images/1")
     api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
   }
@@ -66,14 +66,14 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("That asApiImageMetaInformationWithDomainUrlAndSingleLanguage returns links with domain urls") {
     setApplicationUrl()
 
-    val api = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(DefaultImageMetaInformation, english, None)
+    val api = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(DefaultImageMetaInformation, english)
     api.get.metaUrl should equal ("http://local.digitallibrary.io/image-api/v2/images/1")
     api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
   }
 
   test("That asApiImageMetaInformationWithApplicationUrlAndSingleLanguage returns links even if language is not supported") {
     setApplicationUrl()
-    val api = converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(DefaultImageMetaInformation, english, None)
+    val api = converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(DefaultImageMetaInformation, english)
 
     api.get.metaUrl should equal ("http://image-api/v2/images/1")
     api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
@@ -82,7 +82,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   test("That asApiImageMetaInformationWithDomainUrlAndSingleLanguage returns links even if language is not supported") {
     setApplicationUrl()
 
-    val api = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(DefaultImageMetaInformation, english, None)
+    val api = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(DefaultImageMetaInformation, english)
     api.get.metaUrl should equal ("http://local.digitallibrary.io/image-api/v2/images/1")
     api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
   }
@@ -106,7 +106,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
       processors = List(Author("Idea", "Kaptein Snabelfant")),
       rightsholders = List(Author("Publisher", "KjeksOgKakerAS")),
       agreementId = Some(1)
-    )), LanguageTag("und"), None)
+    )), LanguageTag("und"))
 
     apiImage.get.copyright.creators.size should equal(0)
     apiImage.get.copyright.processors.head.name should equal("Kaptein Snabelfant")
@@ -118,22 +118,22 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
   }
 
   test("that asImageMetaInformationV2 properly") {
-    val result1 = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("nb"), None)
+    val result1 = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("nb"))
     result1.get.id should be("2")
     result1.get.title.language should be(LanguageTag("en"))
 
-    val result2 = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("en"), None)
+    val result2 = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("en"))
     result2.get.id should be("2")
     result2.get.title.language should be(LanguageTag("en"))
 
-    val result3 = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("nn"), None)
+    val result3 = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("nn"))
     result3.get.id should be("2")
     result3.get.title.language should be(LanguageTag("nn"))
 
   }
 
   test("that asImageMetaInformationV2 returns sorted supportedLanguages") {
-    val result = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("nb"), None)
+    val result = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(MultiLangImage, LanguageTag("nb"))
     result.get.supportedLanguages should be(Seq(LanguageTag("nn"), LanguageTag("en"), LanguageTag("und")))
   }
 

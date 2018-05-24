@@ -161,11 +161,7 @@ trait ImageControllerV2 {
     get("/:image_id", operation(getByImageId)) {
       val imageId = long(this.imageId.paramName)
       val language = paramOrNone(this.language.paramName).map(LanguageTag(_)).getOrElse(Language.DefaultLanguage)
-      (for {
-        image <- imageRepository.withId(imageId)
-        rawImageQueryParameters = imageRepository.getCropParameters(image.imageUrl)
-      } yield converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(image, language, rawImageQueryParameters)
-        ) match {
+      imageRepository.withId(imageId).flatMap(image => converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(image, language)) match {
         case Some(image) => image
         case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"Image with id $imageId and language $language not found"))
       }
