@@ -67,6 +67,7 @@ lazy val image_api = (project in file(".")).
       "org.jsoup" % "jsoup" % "1.7.3",
       "org.imgscalr" % "imgscalr-lib" % "4.2",
       "com.netaporter" %% "scala-uri" % "0.4.16",
+      "io.sentry" % "sentry-log4j2" % "1.7.3",
       // These two are not strictly needed, for most cases, but offers better handling of loading images with encoding issues
       "com.twelvemonkeys.imageio" % "imageio-core" % "3.3.2",
       "com.twelvemonkeys.imageio" % "imageio-jpeg" % "3.3.2"
@@ -80,6 +81,7 @@ assemblyMergeStrategy in assembly := {
   case PathList("org", "joda", "convert", "ToString.class")  => MergeStrategy.first
   case PathList("org", "joda", "convert", "FromString.class")  => MergeStrategy.first
   case PathList("org", "joda", "time", "base", "BaseDateTime.class")  => MergeStrategy.first
+  case PathList("META-INF", "org", "apache", "logging", "log4j", "core", "config", "plugins", "Log4j2Plugins.dat")  => MergeStrategy.first
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
