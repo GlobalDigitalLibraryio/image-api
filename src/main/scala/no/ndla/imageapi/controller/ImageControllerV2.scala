@@ -167,7 +167,7 @@ trait ImageControllerV2 {
         asPathParam[String](imageUrl))
         responseMessages(response404, response400, response500))
 
-    get("/storedParameters/:image_url", operation(getStoredParameters)) {
+    get("/stored-parameters/:image_url", operation(getStoredParameters)) {
       (for {
         imageUrl <- paramOrNone("image_url").map(s => s"/$s")
         parameters <- imageRepository.getStoredParameters(imageUrl)
@@ -188,7 +188,7 @@ trait ImageControllerV2 {
       )
         responseMessages(response404, response400, response500))
 
-    post("/storedParameters/:image_url", operation(postStoredParameters)) {
+    post("/stored-parameters/:image_url", operation(postStoredParameters)) {
       authUser.assertHasId()
       authRole.assertHasRole(RoleWithWriteAccess)
       val imageUrl = "/" + params("image_url")

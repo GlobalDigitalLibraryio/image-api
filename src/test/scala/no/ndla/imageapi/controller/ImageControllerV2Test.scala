@@ -238,41 +238,41 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
     }
   }
 
-  test("That GET /storedParameters/123abc.jpg returns 200 with stored parameters when they exist") {
+  test("That GET /stored-parameters/123abc.jpg returns 200 with stored parameters when they exist") {
     val params = StoredParameters(imageUrl = "/123abc.jpg", forRatio = "0.81", revision = Some(1), rawImageQueryParameters = RawImageQueryParameters(width = Some(400), height = Some(200), cropStartX = Some(20), cropStartY = Some(5), cropEndX = Some(40), cropEndY = Some(100), focalX = None, focalY = None, ratio = Some("0.81")))
     when(imageRepository.getStoredParameters("/123abc.jpg")).thenReturn(Some(Seq(params)))
-    get("/storedParameters/123abc.jpg") {
+    get("/stored-parameters/123abc.jpg") {
       status should equal(200)
     }
   }
 
-  test("That GET /storedParameters/xxx.jpg returns 404 when storedParameters doesn't exist") {
+  test("That GET /stored-parameters/xxx.jpg returns 404 when stored-parameters doesn't exist") {
     when(imageRepository.getStoredParameters("/xxx.jpg")).thenReturn(None)
-    get("/storedParameters/xxx.jpg") {
+    get("/stored-parameters/xxx.jpg") {
       status should equal(404)
     }
   }
 
-  test("That POST /storedParameters/123abc.jpg without acceptable body is rejected") {
-    post("/storedParameters/123abc.jpg", "{}", headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+  test("That POST /stored-parameters/123abc.jpg without acceptable body is rejected") {
+    post("/stored-parameters/123abc.jpg", "{}", headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(400)
     }
   }
 
-  test("That POST /storedParameters/123abc.jpg with acceptable body is accepted") {
-    post("/storedParameters/123abc.jpg", """ {"imageUrl": "/123abc.jpg", "forRatio": "0.81", "rawImageQueryParameters": {"focalX": 50} } """, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+  test("That POST /stored-parameters/123abc.jpg with acceptable body is accepted") {
+    post("/stored-parameters/123abc.jpg", """ {"imageUrl": "/123abc.jpg", "forRatio": "0.81", "rawImageQueryParameters": {"focalX": 50} } """, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(200)
     }
   }
 
-  test("That POST /storedParameters/123abc.jpg checks authorization") {
-    post("/storedParameters/123abc.jpg") {
+  test("That POST /stored-parameters/123abc.jpg checks authorization") {
+    post("/stored-parameters/123abc.jpg") {
       status should equal(403)
     }
-    post("/storedParameters/123abc.jpg", headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
+    post("/stored-parameters/123abc.jpg", headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
       status should equal(403)
     }
-    post("/storedParameters/123abc.jpg", headers = Map("Authorization" -> authHeaderWithWrongRole)) {
+    post("/stored-parameters/123abc.jpg", headers = Map("Authorization" -> authHeaderWithWrongRole)) {
       status should equal(403)
     }
   }
