@@ -147,4 +147,9 @@ class ValidationServiceTest extends UnitSuite with TestEnvironment {
     validationService.validateStoredParameters(p).isDefined should be (true)
   }
 
+  test("validate returns a validation error if imageUrl doesn't start with a '/'") {
+    val p = StoredParameters(imageUrl = "123.jpg", forRatio = "0.81", revision = Some(1), rawImageQueryParameters = RawImageQueryParameters(width = None, height = None, cropStartX = Some(10), cropStartY = Some(10), cropEndX = None, cropEndY = None, focalX = Some(50), focalY = Some(60), ratio = Some("0.81")))
+    validationService.validateStoredParameters(p).isDefined should be (true)
+  }
+
 }

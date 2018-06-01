@@ -19,10 +19,10 @@ trait WriteService {
   val writeService: WriteService
 
   class WriteService extends LazyLogging {
-    def storeParameters(imageUrl: String, parameters: StoredParameters): Try[StoredParameters] = {
+    def storeParameters(parameters: StoredParameters): Try[StoredParameters] = {
       validationService.validateStoredParameters(parameters) match {
         case Some(validationMessage) => Failure(new ValidationException(errors = Seq(validationMessage)))
-        case None => Try(imageRepository.insertOrUpdateStoredParameters(imageUrl, parameters))
+        case None => Try(imageRepository.insertOrUpdateStoredParameters(parameters))
       }
     }
 
