@@ -188,12 +188,11 @@ trait ImageControllerV2 {
       )
         responseMessages(response404, response400, response500))
 
-    post("/stored-parameters/:image_url", operation(postStoredParameters)) {
+    post("/stored-parameters", operation(postStoredParameters)) {
       authUser.assertHasId()
       authRole.assertHasRole(RoleWithWriteAccess)
-      val imageUrl = "/" + params("image_url")
       Try(extract[StoredParameters](request.body)).toOption match {
-        case Some(parameters) => writeService.storeParameters(imageUrl, parameters)
+        case Some(parameters) => writeService.storeParameters(parameters)
         case None => throw new ValidationException(errors = Seq(ValidationMessage("body", "Invalid body for parameters")))
       }
     }

@@ -25,10 +25,10 @@ trait ImageRepository {
 
   class ImageRepository extends LazyLogging {
 
-    def insertOrUpdateStoredParameters(imageUrl: String, parameters: StoredParameters)(implicit session: DBSession = AutoSession): StoredParameters = {
-      getStoredParametersFor(imageUrl, parameters.forRatio) match {
-        case Some(_) => updateStoredParameters(imageUrl, parameters)
-        case None => insertStoredParameters(imageUrl, parameters)
+    def insertOrUpdateStoredParameters(parameters: StoredParameters)(implicit session: DBSession = AutoSession): StoredParameters = {
+      getStoredParametersFor(parameters.imageUrl, parameters.forRatio) match {
+        case Some(_) => updateStoredParameters(parameters.imageUrl, parameters)
+        case None => insertStoredParameters(parameters.imageUrl, parameters)
       }
     }
 

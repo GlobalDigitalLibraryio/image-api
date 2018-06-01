@@ -21,6 +21,8 @@ trait ValidationService {
       val r = parameters.rawImageQueryParameters
       if (!Seq(r.cropStartX, r.cropStartY, r.cropEndX, r.cropEndY, r.focalX, r.focalY).flatten.forall(validPercentage)) {
         Some(ValidationMessage("rawImageQueryParameters", "Percentage values must be in the range [0, 100]"))
+      } else if (!parameters.imageUrl.startsWith("/")) {
+        Some(ValidationMessage("imageUrl", "Image URL has to start with a '/'"))
       } else {
         None
       }
