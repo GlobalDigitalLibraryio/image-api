@@ -253,26 +253,26 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
     }
   }
 
-  test("That POST /stored-parameters/123abc.jpg without acceptable body is rejected") {
-    post("/stored-parameters/123abc.jpg", "{}", headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+  test("That POST /stored-parameters without acceptable body is rejected") {
+    post("/stored-parameters", "{}", headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(400)
     }
   }
 
-  test("That POST /stored-parameters/123abc.jpg with acceptable body is accepted") {
-    post("/stored-parameters/123abc.jpg", """ {"imageUrl": "/123abc.jpg", "forRatio": "0.81", "rawImageQueryParameters": {"focalX": 50} } """, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
+  test("That POST /stored-parameters with acceptable body is accepted") {
+    post("/stored-parameters", """ {"imageUrl": "/123abc.jpg", "forRatio": "0.81", "rawImageQueryParameters": {"focalX": 50} } """, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
       status should equal(200)
     }
   }
 
-  test("That POST /stored-parameters/123abc.jpg checks authorization") {
-    post("/stored-parameters/123abc.jpg") {
+  test("That POST /stored-parameters checks authorization") {
+    post("/stored-parameters") {
       status should equal(403)
     }
-    post("/stored-parameters/123abc.jpg", headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
+    post("/stored-parameters", headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
       status should equal(403)
     }
-    post("/stored-parameters/123abc.jpg", headers = Map("Authorization" -> authHeaderWithWrongRole)) {
+    post("/stored-parameters", headers = Map("Authorization" -> authHeaderWithWrongRole)) {
       status should equal(403)
     }
   }

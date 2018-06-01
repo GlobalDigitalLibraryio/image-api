@@ -183,7 +183,6 @@ trait ImageControllerV2 {
         notes "Insert or update stored parameters for an image"
         parameters(
         asHeaderParam[Option[String]](correlationId),
-        asPathParam[String](imageUrl),
         bodyParam[StoredParameters]
       )
         responseMessages(response404, response400, response500))
