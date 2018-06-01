@@ -2,6 +2,7 @@ package no.ndla.imageapi.service
 
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.model.ValidationException
+import no.ndla.imageapi.model.api.{RawImageQueryParameters, StoredParameters}
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.{TestEnvironment, UnitSuite}
 import org.joda.time.{DateTime, DateTimeZone}
@@ -139,6 +140,11 @@ class ValidationServiceTest extends UnitSuite with TestEnvironment {
   test("validate returns success if captions are valid") {
     val imageMeta = sampleImageMeta.copy(captions=Seq(ImageCaption("caption", LanguageTag("en"))))
     validationService.validate(imageMeta).isSuccess should be (true)
+  }
+
+  test("validate returns a validation error if a percentage value is outside [0, 100]") {
+    val p = StoredParameters(imageUrl = "/123.jpg", forRatio = "0.81", revision = Some(1), rawImageQueryParameters = RawImageQueryParameters(width = None, height = None, cropStartX = Some(101), cropStartY = Some(10), cropEndX = None, cropEndY = None, focalX = Some(50), focalY = Some(60), ratio = Some("0.81")))
+    validationService.validateStoredParameters(p).isDefined should be (true)
   }
 
 }

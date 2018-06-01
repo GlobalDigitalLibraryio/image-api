@@ -11,7 +11,7 @@ package no.ndla.imageapi.controller
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.ImageApiProperties.{MaxImageFileSizeBytes, RoleWithWriteAccess}
 import no.ndla.imageapi.auth.{Role, User}
-import no.ndla.imageapi.model.api.{Error, ImageMetaInformationV2, NewImageMetaInformationV2, SearchParams, SearchResult, UpdateImageMetaInformation, ValidationError}
+import no.ndla.imageapi.model.api.{Error, ImageMetaInformationV2, NewImageMetaInformationV2, SearchParams, SearchResult, StoredParameters, UpdateImageMetaInformation, ValidationError}
 import no.ndla.imageapi.model.domain.Sort
 import no.ndla.imageapi.model.{Language, ValidationException, ValidationMessage}
 import no.ndla.imageapi.repository.ImageRepository
@@ -23,7 +23,7 @@ import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger._
 import org.scalatra.util.NotNothing
 
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 trait ImageControllerV2 {
   this: ImageRepository with SearchService with ConverterService with WriteService with Role with User =>
@@ -59,6 +59,7 @@ trait ImageControllerV2 {
     private val pageNo = Param("page","The page number of the search hits to display.")
     private val pageSize = Param("page-size","The number of search hits to display for each page.")
     private val imageId = Param("image_id","Image_id of the image that needs to be fetched.")
+    private val imageUrl = Param("image_url","Image URL of the image which parameters need to be fetched.")
     private val metadata = Param("metadata",
       """The metadata for the image file to submit. Format (as JSON):
             {
@@ -157,6 +158,45 @@ trait ImageControllerV2 {
         )
         responseMessages(response404, response500))
 
+    val getStoredParameters =
+      (apiOperation[StoredParameters]("getStoredParameters")
+        summary "Get stored parameters"
+        notes "Get all stored parameters for an image"
+        parameters(
+        asHeaderParam[Option[String]](correlationId),
+        asPathParam[String](imageUrl))
+        responseMessages(response404, response400, response500))
+
+    get("/stored-parameters/:image_url", operation(getStoredParameters)) {
+      (for {
+        imageUrl <- paramOrNone("image_url").map(s => s"/$s")
+        parameters <- imageRepository.getStoredParameters(imageUrl)
+      } yield parameters) match {
+        case Some(storedParameters) => storedParameters
+        case None => halt(status = 404, body = Error(Error.NOT_FOUND, "Stored parameters not found"))
+      }
+    }
+
+    val postStoredParameters =
+      (apiOperation[StoredParameters]("postStoredParameters")
+        summary "Post stored parameters"
+        notes "Insert or update stored parameters for an image"
+        parameters(
+        asHeaderParam[Option[String]](correlationId),
+        asPathParam[String](imageUrl),
+        bodyParam[StoredParameters]
+      )
+        responseMessages(response404, response400, response500))
+
+    post("/stored-parameters/:image_url", operation(postStoredParameters)) {
+      authUser.assertHasId()
+      authRole.assertHasRole(RoleWithWriteAccess)
+      val imageUrl = "/" + params("image_url")
+      Try(extract[StoredParameters](request.body)).toOption match {
+        case Some(parameters) => writeService.storeParameters(imageUrl, parameters)
+        case None => throw new ValidationException(errors = Seq(ValidationMessage("body", "Invalid body for parameters")))
+      }
+    }
 
     get("/:image_id", operation(getByImageId)) {
       val imageId = long(this.imageId.paramName)
