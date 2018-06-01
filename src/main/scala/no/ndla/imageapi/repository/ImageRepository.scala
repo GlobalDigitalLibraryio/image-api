@@ -85,9 +85,11 @@ trait ImageRepository {
     }
 
     def getStoredParameters(imageUrl: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[Seq[StoredParameters]] = {
-      val im = ParameterInformation.syntax("im")
-      val results: Seq[StoredParameters] = sql"select ${im.result.*} from ${ParameterInformation.as(im)} where image_url = ${imageUrl}"
-        .map(ParameterInformation(im)).list().apply()
+      val pi = ParameterInformation.syntax
+      val results = select
+        .from(ParameterInformation as pi)
+        .where.eq(pi.imageUrl, imageUrl).toSQL
+        .map(ParameterInformation(pi)).list().apply()
       if (results.nonEmpty) {
         Some(results)
       } else {
@@ -96,9 +98,12 @@ trait ImageRepository {
     }
 
     def getStoredParametersFor(imageUrl: String, forRatio: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[StoredParameters] = {
-      val im = ParameterInformation.syntax("im")
-      sql"select ${im.result.*} from ${ParameterInformation.as(im)} where image_url = ${imageUrl} and for_ratio = ${forRatio}"
-        .map(ParameterInformation(im)).single().apply()
+      val pi = ParameterInformation.syntax
+      select
+        .from(ParameterInformation as pi)
+        .where.eq(pi.imageUrl, imageUrl)
+          .and.eq(pi.forRatio, forRatio).toSQL
+        .map(ParameterInformation(pi)).single().apply()
     }
 
     implicit val formats = org.json4s.DefaultFormats + ImageMetaInformation.JSonSerializer + new LanguageTagSerializer
