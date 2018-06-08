@@ -32,7 +32,7 @@ lazy val image_api = (project in file(".")).
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= Seq(
-      "gdl" %% "network" % "0.7",
+      "gdl" %% "network" % "0.10",
       "ndla" %% "mapping" % "0.8",
       "gdl" %% "language" % "0.5",
       "joda-time" % "joda-time" % "2.8.2",

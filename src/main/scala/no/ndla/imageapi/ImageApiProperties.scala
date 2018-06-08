@@ -90,7 +90,7 @@ object ImageApiProperties extends LazyLogging {
   }
 
   def propOrElse(key: String, default: => String): String = {
-    secrets.get(key).flatten match {
+    secrets.get(key) match {
       case Some(secret) => secret
       case None =>
         envOrNone(key) match {
