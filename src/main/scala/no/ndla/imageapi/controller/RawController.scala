@@ -3,11 +3,10 @@ package no.ndla.imageapi.controller
 import javax.servlet.http.HttpServletRequest
 
 import com.netaporter.uri.Uri.{parse => uriParse}
-import no.ndla.imageapi.model.api.Error
+import no.ndla.imageapi.model.api.{Error, RawImageQueryParameters}
 import no.ndla.imageapi.model.domain.ImageStream
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.{ImageConverter, ImageStorageService}
-import org.json4s.native.Serialization.{write, _}
 import org.scalatra.Ok
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger.SwaggerSupportSyntax.OperationBuilder
@@ -81,43 +80,56 @@ trait RawController {
       imageStorage.get(imageName) match {
         case Success(img) if img.format.equals("gif") => img
         case Success(img) =>
-          doubleOrNone("storedRatio").flatMap(storedRatio => imageRepository.getStoredParametersFor(imageUrl, storedRatio.toString)) match {
-            case Some(storedParameters) => redirect(url(imageUrl, read[Map[String, String]](write(storedParameters.rawImageQueryParameters))))
-            case None => crop(img).flatMap(dynamicCrop).flatMap(resize).get
-          }
+
+          val parameters = doubleOrNone("storedRatio")
+            .flatMap(storedRatio => imageRepository.getStoredParametersFor(imageUrl, storedRatio.toString))
+            .map(_.rawImageQueryParameters)
+            .getOrElse(extractRawImageQueryParameters())
+
+          val transformed = for {
+            cropped <- crop(img, parameters)
+            dynamicCropped <- dynamicCrop(cropped, parameters)
+            resized <- resize(dynamicCropped, parameters)
+          } yield resized
+
+          transformed.get
+
         case Failure(e) => throw e
       }
     }
 
-    def crop(image: ImageStream)(implicit request: HttpServletRequest): Try[ImageStream] = {
-      val startX = doubleInRange("cropStartX", PercentPoint.MinValue, PercentPoint.MaxValue)
-      val startY = doubleInRange("cropStartY", PercentPoint.MinValue, PercentPoint.MaxValue)
-      val endX = doubleInRange("cropEndX", PercentPoint.MinValue, PercentPoint.MaxValue)
-      val endY = doubleInRange("cropEndY", PercentPoint.MinValue, PercentPoint.MaxValue)
+    def extractRawImageQueryParameters()(implicit request: HttpServletRequest): RawImageQueryParameters = {
+      RawImageQueryParameters(
+        width = intOrNoneWithValidation("width"),
+        height = intOrNoneWithValidation("height"),
+        cropStartX = percentage("cropStartX"),
+        cropStartY = percentage("cropStartY"),
+        cropEndX = percentage("cropEndX"),
+        cropEndY = percentage("cropEndY"),
+        focalX = percentage("focalX"),
+        focalY = percentage("focalY"),
+        ratio = paramOrNone("ratio")
+      )
+    }
 
-      (startX, startY, endX, endY) match {
+    def crop(image: ImageStream, parameters: RawImageQueryParameters): Try[ImageStream] = {
+      (parameters.cropStartX, parameters.cropStartY, parameters.cropEndX, parameters.cropEndY) match {
         case (Some(sx), Some(sy), Some(ex), Some(ey)) =>
           imageConverter.crop(image, PercentPoint(sx.toInt, sy.toInt), PercentPoint(ex.toInt, ey.toInt))
         case _ => Success(image)
       }
     }
 
-    def dynamicCrop(image: ImageStream): Try[ImageStream] = {
-      val focalX = doubleInRange("focalX", PercentPoint.MinValue, PercentPoint.MaxValue)
-      val focalY = doubleInRange("focalY", PercentPoint.MinValue, PercentPoint.MaxValue)
-      val ratio = doubleOrNone("ratio")
-      val Seq(widthOpt, heightOpt) = extractDoubleOpts("width", "height")
-
-      (focalX, focalY, widthOpt, heightOpt) match {
+    def dynamicCrop(image: ImageStream, parameters: RawImageQueryParameters): Try[ImageStream] = {
+      (parameters.focalX, parameters.focalY, parameters.width, parameters.height) match {
         case (Some(fx), Some(fy), w, h) =>
-          imageConverter.dynamicCrop(image, PercentPoint(fx.toInt, fy.toInt), w.map(_.toInt), h.map(_.toInt), ratio)
+          imageConverter.dynamicCrop(image, PercentPoint(fx.toInt, fy.toInt), w, h, parameters.ratio.map(_.toDouble))
         case _ => Success(image)
       }
     }
 
-    def resize(image: ImageStream)(implicit request: HttpServletRequest): Try[ImageStream] = {
-      val Seq(widthOpt, heightOpt) = extractDoubleOpts("width", "height")
-      (widthOpt, heightOpt) match {
+    def resize(image: ImageStream, parameters: RawImageQueryParameters): Try[ImageStream] = {
+      (parameters.width, parameters.height) match {
         case (Some(width), Some(height)) => imageConverter.resize(image, width.toInt, height.toInt)
         case (Some(width), _) => imageConverter.resizeWidth(image, width.toInt)
         case (_, Some(height)) => imageConverter.resizeHeight(image, height.toInt)
