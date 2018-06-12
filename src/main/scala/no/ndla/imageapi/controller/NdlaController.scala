@@ -13,6 +13,7 @@ import java.lang.Math.{max, min}
 import com.typesafe.scalalogging.LazyLogging
 import io.digitallibrary.network.{ApplicationUrl, AuthUser, CorrelationID}
 import javax.servlet.http.HttpServletRequest
+
 import no.ndla.imageapi.ComponentRegistry
 import no.ndla.imageapi.ImageApiProperties.{CorrelationIdHeader, CorrelationIdKey}
 import no.ndla.imageapi.model._
@@ -93,24 +94,6 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     paramValue.toLong
   }
 
-  def extractDoubleOpts(paramNames: String*)(implicit request: HttpServletRequest): Seq[Option[Double]] = {
-    paramNames.map(paramName => {
-      params.get(paramName) match {
-        case Some(value) =>
-          if (!isDouble(value))
-            throw new ValidationException(errors=Seq(ValidationMessage(paramName, s"Invalid value for $paramName. Only numbers are allowed.")))
-
-          Some(value.toDouble)
-        case _ => None
-      }
-    })
-  }
-
-  def booleanOrDefault(paramName: String, default: Boolean)(implicit request: HttpServletRequest): Boolean = {
-    val paramValue = paramOrDefault(paramName, "")
-    if (!isBoolean(paramValue)) default else paramValue.toBoolean
-  }
-
   def paramOrNone(paramName: String)(implicit request: HttpServletRequest): Option[String] = {
     params.get(paramName).map(_.trim).filterNot(_.isEmpty())
   }
@@ -123,12 +106,26 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     paramOrNone(name).flatMap(i => Try(i.toInt).toOption)
   }
 
+  def intOrNoneWithValidation(name: String)(implicit request: HttpServletRequest): Option[Int] = {
+      paramOrNone(name) match {
+        case Some(value) => Try(value.toInt).toOption match {
+          case Some(int) => Some(int)
+          case None => throw new ValidationException(errors=Seq(ValidationMessage(name, s"Invalid int value for $name")))
+        }
+        case None => None
+    }
+  }
+
   def paramOrDefault(paramName: String, default: String)(implicit request: HttpServletRequest): String = {
     paramOrNone(paramName).getOrElse(default)
   }
 
-  def doubleInRange(paramName: String, from: Int, to: Int)(implicit request: HttpServletRequest): Option[Double] = {
-    doubleOrNone(paramName) match {
+  def percentage(paramName: String)(implicit request: HttpServletRequest): Option[Int] = {
+    intInRange(paramName, 0, 100)
+  }
+
+  def intInRange(paramName: String, from: Int, to: Int)(implicit request: HttpServletRequest): Option[Int] = {
+    intOrNone(paramName) match {
       case Some(d) if d >= min(from, to) && d <= max(from, to) => Some(d)
       case Some(d) => throw new ValidationException(errors=Seq(ValidationMessage(paramName, s"Invalid value for $paramName. Must be in range $from-$to but was $d")))
       case None => None
