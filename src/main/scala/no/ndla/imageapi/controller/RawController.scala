@@ -25,7 +25,6 @@ trait RawController {
 
     val response404 = ResponseMessage(404, "Not found", Some("Error"))
     val response500 = ResponseMessage(500, "Unknown error", Some("Error"))
-    val staticAssetCacheHeaders = Map("Cache-Control" -> "public, max-age=31536000, immutable")
 
     val getImageParams: List[Parameter] = List(
       headerParam[Option[String]]("X-Correlation-ID").description("User supplied correlation-id. May be omitted."),
@@ -63,7 +62,7 @@ trait RawController {
       ).responseMessages(response404, response500)
 
     get("/:name", operation(getImageFile)) {
-      Ok(getRawImage(params("name")), staticAssetCacheHeaders)
+      Ok(getRawImage(params("name")))
     }
 
     get("/id/:id", operation(getImageFileById)) {
