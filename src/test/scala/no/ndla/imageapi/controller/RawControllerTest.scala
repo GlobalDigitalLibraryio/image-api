@@ -272,11 +272,13 @@ class RawControllerTest extends UnitSuite with ScalatraSuite with TestEnvironmen
     }
   }
 
-  test("That GET /123.jpg?storedRatio=0.81 uses stored parameters when they exist") {
+  test("That GET /123.jpg?storedRatio=0.81 redirects with stored parameters when they exist") {
     val returnParameters = StoredParameters(imageUrl = "/123.jpg", forRatio = "0.81", revision = Some(1), rawImageQueryParameters = RawImageQueryParameters(width = None, height = None, cropStartX = Some(50), cropStartY = Some(10), cropEndX = None, cropEndY = None, focalX = Some(50), focalY = Some(60), ratio = Some("0.81")))
     when(imageRepository.getStoredParametersFor("/123.jpg", "0.81")).thenReturn(Some(returnParameters))
+    when(converterService.asApiUrl("/123.jpg")).thenReturn("https://cloudfront-url.com/123.jpg")
     get("/123.jpg?storedRatio=0.81") {
-      status should equal (200)
+      status should equal (302)
+      header.get("Location") should equal(Some("https://cloudfront-url.com/123.jpg?cropStartX=50&focalX=50&ratio=0.81&cropStartY=10&focalY=60"))
     }
   }
   test("That GET /123.jpg?storedRatio=0.13 ignores parameter storedRatio when stored parameters doesn't exist for that ratio") {

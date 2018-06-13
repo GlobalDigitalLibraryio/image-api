@@ -6,16 +6,17 @@ import com.netaporter.uri.Uri.{parse => uriParse}
 import no.ndla.imageapi.model.api.{Error, RawImageQueryParameters}
 import no.ndla.imageapi.model.domain.ImageStream
 import no.ndla.imageapi.repository.ImageRepository
-import no.ndla.imageapi.service.{ImageConverter, ImageStorageService}
+import no.ndla.imageapi.service.{ConverterService, ImageConverter, ImageStorageService}
 import org.scalatra.Ok
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger.SwaggerSupportSyntax.OperationBuilder
 import org.scalatra.swagger.{Parameter, ResponseMessage, Swagger, SwaggerSupport}
+import org.json4s.native.Serialization.{write, _}
 
 import scala.util.{Failure, Success, Try}
 
 trait RawController {
-  this: ImageStorageService with ImageConverter with ImageRepository =>
+  this: ImageStorageService with ImageConverter with ImageRepository with ConverterService =>
   val rawController: RawController
 
   class RawController(implicit val swagger: Swagger) extends NdlaController with SwaggerSupport {
@@ -63,37 +64,46 @@ trait RawController {
       ).responseMessages(response404, response500)
 
     get("/:name", operation(getImageFile)) {
-      Ok(getRawImage(params("name")), staticAssetCacheHeaders)
+      getRawImage(params("name")) match {
+        case Left(img) => Ok(img, staticAssetCacheHeaders)
+        case Right(redirectUrl) => redirect(redirectUrl)
+      }
     }
 
     get("/id/:id", operation(getImageFileById)) {
      imageRepository.withId(long("id")) match {
         case Some(imageMeta) =>
           val imageName = uriParse(imageMeta.imageUrl).toStringRaw.substring(1) // Strip heading '/'
-          getRawImage(imageName)
+          getRawImage(imageName) match {
+            case Left(img) => Ok(img)
+            case Right(redirectUrl) => redirect(redirectUrl)
+          }
         case None => None
       }
     }
 
-    private def getRawImage(imageName: String): ImageStream = {
+    private def getRawImage(imageName: String): Either[ImageStream, String] = {
       val imageUrl = s"/$imageName"
       imageStorage.get(imageName) match {
-        case Success(img) if img.format.equals("gif") => img
+        case Success(img) if img.format.equals("gif") => Left(img)
         case Success(img) =>
 
-          val parameters = doubleOrNone("storedRatio")
+          doubleOrNone("storedRatio")
             .flatMap(storedRatio => imageRepository.getStoredParametersFor(imageUrl, storedRatio.toString))
-            .map(_.rawImageQueryParameters)
-            .getOrElse(extractRawImageQueryParameters())
-
-          val transformed = for {
-            cropped <- crop(img, parameters)
-            dynamicCropped <- dynamicCrop(cropped, parameters)
-            resized <- resize(dynamicCropped, parameters)
-          } yield resized
-
-          transformed.get
-
+            match {
+            case Some(storedParameters) => Right(url(converterService.asApiUrl(imageUrl),
+              read[Map[String, String]](write(storedParameters.rawImageQueryParameters)),
+              absolutize = false
+            ))
+            case None =>
+              val parameters = extractRawImageQueryParameters()
+              val transformed = for {
+                cropped <- crop(img, parameters)
+                dynamicCropped <- dynamicCrop(cropped, parameters)
+                resized <- resize(dynamicCropped, parameters)
+              } yield resized
+              Left(transformed.get)
+          }
         case Failure(e) => throw e
       }
     }
