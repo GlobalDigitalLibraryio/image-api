@@ -92,7 +92,8 @@ trait RawController {
             .flatMap(storedRatio => imageRepository.getStoredParametersFor(imageUrl, storedRatio.toString))
             match {
             case Some(storedParameters) => Right(url(converterService.asApiUrl(imageUrl),
-              read[Map[String, String]](write(storedParameters.rawImageQueryParameters)),
+              read[Map[String, String]](write(storedParameters.rawImageQueryParameters.copy(
+                width = intOrNoneWithValidation("width"), height = intOrNoneWithValidation("height")))),
               absolutize = false
             ))
             case None =>
