@@ -12,7 +12,7 @@ import com.typesafe.scalalogging.LazyLogging
 import no.ndla.imageapi.controller.LanguageTagSerializer
 import no.ndla.imageapi.integration.DataSource
 import no.ndla.imageapi.model.api.StoredParameters
-import no.ndla.imageapi.model.domain.{ImageMetaInformation, ParameterInformation}
+import no.ndla.imageapi.model.domain.{ImageMetaInformation, ParameterInformation,License}
 import no.ndla.imageapi.service.ConverterService
 import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
@@ -188,6 +188,11 @@ trait ImageRepository {
     private def imageMetaInformationsWhere(whereClause: SQLSyntax)(implicit session: DBSession = ReadOnlyAutoSession): List[ImageMetaInformation] = {
       val im = ImageMetaInformation.syntax("im")
       sql"select ${im.result.*} from ${ImageMetaInformation.as(im)} where $whereClause".map(ImageMetaInformation(im)).list.apply()
+    }
+
+
+    def getAllLicenses()(implicit session: DBSession = ReadOnlyAutoSession): String = {
+      "teststring"
     }
   }
 }
