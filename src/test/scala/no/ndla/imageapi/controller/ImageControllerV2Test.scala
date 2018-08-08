@@ -25,6 +25,7 @@ import org.mockito.Mockito._
 import org.scalatra.servlet.FileItem
 import org.scalatra.test.Uploadable
 import org.scalatra.test.scalatest.ScalatraSuite
+import no.ndla.mapping.License.getLicenses
 
 import scala.util.{Failure, Success, Try}
 
@@ -277,4 +278,15 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
     }
   }
 
+  test("That GET /licenses returns a list of licenses and 200") {
+    implicit val formats: Formats = DefaultFormats
+    val expectedObject = getLicenses.map(licenseDefinition => License(licenseDefinition.license, licenseDefinition.description, licenseDefinition.url))
+    when(imageRepository.getLicenses).thenReturn(expectedObject)
+
+    get("/licenses") {
+      status should equal(200)
+      val resultObject = JsonParser.parse(body).extract[Seq[License]]
+      resultObject should equal(expectedObject)
+    }
+  }
 }

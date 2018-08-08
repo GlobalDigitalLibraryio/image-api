@@ -262,15 +262,13 @@ trait ImageControllerV2 {
       }
     }
 
-
-    val getAllLicenses =
-      (apiOperation[List[License]]("getAllLicenses")
+    val getLicenses =
+      (apiOperation[Seq[License]]("getLicenses")
         summary "Get all licenses"
         notes "Gets all licenses"
-        responseMessages (response500))
-
-    get("/licenses/", operation(getAllLicenses)) {
-      imageRepository.getAllLicenses()
+        )
+    get("/licenses", operation(getLicenses)) {
+      imageRepository.getLicenses
     }
 
   }

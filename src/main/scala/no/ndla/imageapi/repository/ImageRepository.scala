@@ -190,9 +190,6 @@ trait ImageRepository {
       sql"select ${im.result.*} from ${ImageMetaInformation.as(im)} where $whereClause".map(ImageMetaInformation(im)).list.apply()
     }
 
-
-    def getAllLicenses()(implicit session: DBSession = ReadOnlyAutoSession): String = {
-      "teststring"
-    }
+    def getLicenses: Seq[License] = no.ndla.mapping.License.getLicenses.map(license => License(license.license, license.description, license.url))
   }
 }
