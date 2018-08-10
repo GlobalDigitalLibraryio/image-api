@@ -9,9 +9,10 @@
 package no.ndla.imageapi.service
 
 import java.util.Date
-import javax.servlet.http.HttpServletRequest
 
+import javax.servlet.http.HttpServletRequest
 import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.license.model.License
 import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.model.api
 import no.ndla.imageapi.model.domain._
@@ -27,8 +28,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   val full = Image("/123.png", 200, "image/png")
   val nob = LanguageTag("nb")
-  val DefaultImageMetaInformation = ImageMetaInformation(Some(1), None, List(ImageTitle("test", nob)), List(), full.fileName, full.size, full.contentType, Copyright(License("", "", None), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
-  val MultiLangImage = ImageMetaInformation(Some(2), None, List(ImageTitle("nynorsk", LanguageTag("nn")), ImageTitle("english", LanguageTag("en")), ImageTitle("norsk", LanguageTag("und"))), List(), full.fileName, full.size, full.contentType, Copyright(License("", "", None), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
+  val DefaultImageMetaInformation = ImageMetaInformation(Some(1), None, List(ImageTitle("test", nob)), List(), full.fileName, full.size, full.contentType, Copyright(License("cc-by-2.0"), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
+  val MultiLangImage = ImageMetaInformation(Some(2), None, List(ImageTitle("nynorsk", LanguageTag("nn")), ImageTitle("english", LanguageTag("en")), ImageTitle("norsk", LanguageTag("und"))), List(), full.fileName, full.size, full.contentType, Copyright(License("cc-by-2.0"), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
   val english = LanguageTag("eng")
 
   override def beforeEach: Unit = {

@@ -12,6 +12,7 @@ import java.io.{BufferedInputStream, InputStream}
 import java.util.Date
 
 import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.license.model
 import io.digitallibrary.network.ApplicationUrl
 import javax.servlet.http.HttpServletRequest
 import no.ndla.imageapi.model.api._
@@ -36,7 +37,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     "ext1",
     "title",
     "alt text",
-    Copyright(License("by", "", None), "", Seq.empty, Seq.empty, Seq.empty, None, None, None),
+    Copyright(License("cc-by-2.0", "", None), "", Seq.empty, Seq.empty, Seq.empty, None, None, None),
     Seq.empty,
     "",
     LanguageTag("en")
@@ -256,7 +257,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
       "nb",
       Some("Title"),
       Some("AltText"),
-      Some(Copyright(License("testLic", "License for testing", None), "test", List(Author("Opphavsmann", "Testerud")), List(), List(), None, None, None)),
+      Some(Copyright(License("cc-by-2.0", "License for testing", None), "test", List(Author("Opphavsmann", "Testerud")), List(), List(), None, None, None)),
       Some(List("a", "b", "c")),
       Some("Caption")
     )
@@ -264,7 +265,7 @@ class WriteServiceTest extends UnitSuite with TestEnvironment {
     val expectedResult = existing.copy(
       titles = List(domain.ImageTitle("Title", LanguageTag("nb"))),
       alttexts = List(domain.ImageAltText("AltText", LanguageTag("nb"))),
-      copyright = domain.Copyright(domain.License("testLic", "License for testing", None), "test", List(domain.Author("Opphavsmann", "Testerud")), List(), List(), None, None, None),
+      copyright = domain.Copyright(model.License("cc-by-2.0"), "test", List(domain.Author("Opphavsmann", "Testerud")), List(), List(), None, None, None),
       tags = List(domain.ImageTag(List("a", "b", "c"), LanguageTag("nb"))),
       captions = List(domain.ImageCaption("Caption", LanguageTag("nb")))
     )

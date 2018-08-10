@@ -11,8 +11,9 @@ package no.ndla.imageapi.model.domain
 import java.util.Date
 
 import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.license.model.License
 import no.ndla.imageapi.ImageApiProperties
-import no.ndla.imageapi.controller.LanguageTagSerializer
+import no.ndla.imageapi.controller.{LanguageTagSerializer, LicenseSerializer}
 import no.ndla.imageapi.model.api.{RawImageQueryParameters, StoredParameters}
 import org.json4s.{FieldSerializer, Formats}
 import org.json4s.FieldSerializer._
@@ -25,7 +26,6 @@ case class ImageCaption(caption: String, language: LanguageTag) extends Language
 case class ImageTag(tags: Seq[String], language: LanguageTag) extends LanguageField[Seq[String]] { override def value: Seq[String] = tags }
 case class Image(fileName: String, size: Long, contentType: String)
 case class Copyright(license: License, origin: String, creators: Seq[Author], processors: Seq[Author], rightsholders: Seq[Author], agreementId: Option[Long], validFrom: Option[Date], validTo: Option[Date])
-case class License(license: String, description: String, url: Option[String])
 case class Author(`type`: String, name: String)
 case class ImageMetaInformation(
   id: Option[Long],
@@ -67,7 +67,7 @@ object ParameterInformation extends SQLSyntaxSupport[StoredParameters] {
 }
 
 object ImageMetaInformation extends SQLSyntaxSupport[ImageMetaInformation] {
-  implicit val formats: Formats = org.json4s.DefaultFormats + new LanguageTagSerializer
+  implicit val formats: Formats = org.json4s.DefaultFormats + new LanguageTagSerializer + new LicenseSerializer
   override val tableName = "imagemetadata"
   override val schemaName = Some(ImageApiProperties.MetaSchema)
   val JSonSerializer: FieldSerializer[ImageMetaInformation] = FieldSerializer[ImageMetaInformation](ignore("id"))
