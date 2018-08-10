@@ -268,7 +268,7 @@ trait ImageControllerV2 {
         notes "Gets all licenses"
         )
     get("/licenses", operation(getLicenses)) {
-      imageRepository.getLicenses
+      no.ndla.mapping.License.getLicenses.map(license => License(license.license, license.description, license.url))
     }
 
   }

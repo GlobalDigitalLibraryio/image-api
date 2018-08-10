@@ -189,7 +189,5 @@ trait ImageRepository {
       val im = ImageMetaInformation.syntax("im")
       sql"select ${im.result.*} from ${ImageMetaInformation.as(im)} where $whereClause".map(ImageMetaInformation(im)).list.apply()
     }
-
-    def getLicenses: Seq[License] = no.ndla.mapping.License.getLicenses.map(license => License(license.license, license.description, license.url))
   }
 }

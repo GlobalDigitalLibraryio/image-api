@@ -281,7 +281,6 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
   test("That GET /licenses returns a list of licenses and 200") {
     implicit val formats: Formats = DefaultFormats
     val expectedObject = getLicenses.map(licenseDefinition => License(licenseDefinition.license, licenseDefinition.description, licenseDefinition.url))
-    when(imageRepository.getLicenses).thenReturn(expectedObject)
 
     get("/licenses") {
       status should equal(200)
