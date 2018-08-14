@@ -11,6 +11,7 @@ package no.ndla.imageapi.service
 import com.netaporter.uri.Uri.parse
 import com.typesafe.scalalogging.LazyLogging
 import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.license.model.License
 import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.auth.User
@@ -112,8 +113,8 @@ trait ConverterService {
       api.ImageTitle(domainImageTitle.title, domainImageTitle.language)
     }
 
-    def asApiLicense(domainLicense: domain.License): api.License = {
-      api.License(domainLicense.license, domainLicense.description, domainLicense.url)
+    def asApiLicense(domainLicense: License): api.License = {
+      api.License(domainLicense.name, domainLicense.description, Some(domainLicense.url))
     }
 
     def asApiUrl(url: String): String = {
@@ -157,8 +158,8 @@ trait ConverterService {
         copyright.validTo)
     }
 
-    def toDomainLicense(license: api.License): domain.License = {
-      domain.License(license.license, license.description, license.url)
+    def toDomainLicense(license: api.License): License = {
+      License(license.license)
     }
 
     def toDomainAuthor(author: api.Author): domain.Author = {

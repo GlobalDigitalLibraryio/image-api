@@ -32,6 +32,11 @@ trait WriteService {
         case _ =>
       }
 
+      validationService.validateLicense(newImage.copyright.license) match {
+        case validationMessage :: rest => return Failure(new ValidationException(errors = validationMessage :: rest))
+        case _ =>
+      }
+
       val domainImage = uploadImage(file).map(uploadedImage =>
         converterService.asDomainImageMetaInformationV2(newImage, uploadedImage)) match {
         case Failure(e) => return Failure(e)
@@ -65,6 +70,7 @@ trait WriteService {
       val now = clock.now()
       val userId = authUser.userOrClientid()
 
+
       existing.copy(
         titles = mergeLanguageFields(existing.titles, toMerge.title.toSeq.map(t => converterService.asDomainTitle(t, LanguageTag(toMerge.language)))),
         alttexts = mergeLanguageFields(existing.alttexts, toMerge.alttext.toSeq.map(a => converterService.asDomainAltText(a, LanguageTag(toMerge.language)))),
@@ -84,7 +90,12 @@ trait WriteService {
     def updateImage(imageId: Long, image: UpdateImageMetaInformation): Try[ImageMetaInformationV2] = {
       val updateImage = imageRepository.withId(imageId) match {
         case None => Failure(new ImageNotFoundException(s"Image with id $imageId found"))
-        case Some(existing) => Success(mergeImages(existing, image))
+        case Some(existing) => {
+          image.copyright.map(c => validationService.validateLicense(c.license)) match {
+            case Some(validationMessage :: rest) => return Failure(new ValidationException(errors = validationMessage :: rest))
+            case _ => Success(mergeImages(existing, image))
+          }
+        }
       }
 
       updateImage.flatMap(validationService.validate)

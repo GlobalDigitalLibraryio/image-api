@@ -9,6 +9,7 @@
 package no.ndla.imageapi.controller
 
 import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.license.model.License
 import no.ndla.imageapi.model.api.{ImageAltText, ImageCaption, ImageTag, ImageTitle}
 import no.ndla.imageapi.model.{api, domain}
 import no.ndla.imageapi.{ImageApiProperties, TestEnvironment, UnitSuite}
@@ -38,12 +39,12 @@ class InternControllerTest extends UnitSuite with ScalatraSuite with TestEnviron
     s"${ImageApiProperties.CloudFrontUrl}/test.jpg",
     0,
     "",
-    api.Copyright(api.License("", "", None), "", List(), List(), List(), None, None, None),
+    api.Copyright(api.License("CC-BY-2.0", "Creative Commons Attribution 2.0 Generic", Some("http://creativecommons.org/licenses/by/2.0/legalcode")), "", List(), List(), List(), None, None, None),
     ImageTag(Seq.empty, nob),
     ImageCaption("", nob),
     Seq())
 
-  val DefaultDomainImageMetaInformation = domain.ImageMetaInformation(Some(1), None, List(), List(), "test.jpg", 0, "", domain.Copyright(domain.License("", "", None), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
+  val DefaultDomainImageMetaInformation = domain.ImageMetaInformation(Some(1), None, List(), List(), "test.jpg", 0, "", domain.Copyright(License("cc-by-2.0"), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
 
   override def beforeEach = {
     reset(imageRepository, indexService, indexBuilderService)

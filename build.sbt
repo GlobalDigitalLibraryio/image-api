@@ -35,6 +35,7 @@ lazy val image_api = (project in file(".")).
       "gdl" %% "network" % "0.10",
       "ndla" %% "mapping" % "0.8",
       "gdl" %% "language" % "0.5",
+      "gdl" %% "license" % "0.1",
       "joda-time" % "joda-time" % "2.8.2",
       "org.scalatra" %% "scalatra" % Scalatraversion,
       "org.scalatra" %% "scalatra-json" % Scalatraversion,
