@@ -11,7 +11,7 @@ package no.ndla.imageapi.controller
 import java.util.Date
 
 import io.digitallibrary.language.model.LanguageTag
-import io.digitallibrary.license.model.License
+import io.digitallibrary.license.model.{LicenseList, License}
 import no.ndla.imageapi.ImageApiProperties.MaxImageFileSizeBytes
 import no.ndla.imageapi.model.api.{NewImageMetaInformationV2, SearchResult, UpdateImageMetaInformation}
 import no.ndla.imageapi.model.domain.{Sort, _}
@@ -26,7 +26,6 @@ import org.mockito.Mockito._
 import org.scalatra.servlet.FileItem
 import org.scalatra.test.Uploadable
 import org.scalatra.test.scalatest.ScalatraSuite
-import no.ndla.mapping.License.getLicenses
 
 import scala.util.{Failure, Success, Try}
 
@@ -281,11 +280,11 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
 
   test("That GET /licenses returns a list of licenses and 200") {
     implicit val formats: Formats = DefaultFormats
-    val expectedObject = getLicenses.map(licenseDefinition => License(licenseDefinition.license, licenseDefinition.description, licenseDefinition.url))
+    val expectedObject = LicenseList.licenses.map(licenseDefinition => api.License(licenseDefinition.name, licenseDefinition.description, Some(licenseDefinition.url)))
 
     get("/licenses") {
       status should equal(200)
-      val resultObject = JsonParser.parse(body).extract[Seq[License]]
+      val resultObject = JsonParser.parse(body).extract[Seq[api.License]]
       resultObject should equal(expectedObject)
     }
   }
