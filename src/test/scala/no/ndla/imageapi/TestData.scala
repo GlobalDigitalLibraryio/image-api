@@ -12,6 +12,7 @@ import java.awt.image.BufferedImage
 import java.io.InputStream
 
 import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.license.model.License
 import javax.imageio.ImageIO
 import no.ndla.imageapi.model.api
 import no.ndla.imageapi.model.domain._
@@ -25,7 +26,7 @@ object TestData {
 
   def updated() = (new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC)).toDate
 
-  val ByNcSa = License("by-nc-sa", "Creative Commons Attribution-NonCommercial-ShareAlike 2.0 Generic", Some("https://creativecommons.org/licenses/by-nc-sa/2.0/"))
+  val ByNcSa = License("cc-by-nc-sa-4.0")
 
   val nob = LanguageTag("nb")
 
@@ -35,8 +36,8 @@ object TestData {
     List(ImageTag(List("rovdyr", "elg"), nob)), List(ImageCaption("Elg i busk", nob)), "ndla124", updated())
 
   val apiElg = api.ImageMetaInformationV2("1", None, "Elg.jpg", api.ImageTitle("Elg i busk", nob), api.ImageAltText("Elg i busk", nob),
-    "Elg.jpg", 2865539, "image/jpeg", api.Copyright(api.License("by-nc-sa", "Creative Commons Attribution-NonCommercial-ShareAlike 2.0 Generic",
-    Some("https://creativecommons.org/licenses/by-nc-sa/2.0/")), "http://www.scanpix.no", List(api.Author("Fotograf", "Test Testesen")), List(), List(), None, None, None),
+    "Elg.jpg", 2865539, "image/jpeg", api.Copyright(api.License(ByNcSa.name, ByNcSa.description, Some(ByNcSa.url)),
+      "http://www.scanpix.no", List(api.Author("Fotograf", "Test Testesen")), List(), List(), None, None, None),
     api.ImageTag(List("rovdyr", "elg"), nob), api.ImageCaption("Elg i busk", nob), List(nob))
 
   val bjorn = ImageMetaInformation(Some(2), None, List(ImageTitle("Bjørn i busk", nob)),List(ImageAltText("Elg i busk", nob)),

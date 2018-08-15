@@ -1,7 +1,7 @@
 package no.ndla.imageapi.service
 
 import no.ndla.imageapi.ImageApiProperties
-import no.ndla.imageapi.model.api.StoredParameters
+import no.ndla.imageapi.model.api.{StoredParameters, License}
 import no.ndla.imageapi.model.domain._
 import no.ndla.imageapi.model.{ValidationException, ValidationMessage}
 import no.ndla.mapping.License.getLicense
@@ -72,7 +72,6 @@ trait ValidationService {
     }
 
     def validateCopyright(copyright: Copyright): Seq[ValidationMessage] = {
-      validateLicense(copyright.license).toList ++
       copyright.creators.flatMap(a => validateAuthor("copyright.creators", a, ImageApiProperties.creatorTypes)) ++
       copyright.processors.flatMap(a => validateAuthor("copyright.processors", a, ImageApiProperties.processorTypes)) ++
       copyright.rightsholders.flatMap(a => validateAuthor("copyright.rightsholders", a, ImageApiProperties.rightsholderTypes)) ++
@@ -87,9 +86,9 @@ trait ValidationService {
     }
 
     def validateLicense(license: License): Seq[ValidationMessage] = {
-      getLicense(license.license) match {
-        case None => Seq(ValidationMessage("license.license", s"${license.license} is not a valid license"))
-        case _ => Seq()
+      Try(io.digitallibrary.license.model.License(license.license)) match {
+        case Success(_) => Seq()
+        case Failure(ex) => Seq(ValidationMessage("license.license", ex.getMessage))
       }
     }
 

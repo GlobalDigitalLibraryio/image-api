@@ -9,7 +9,7 @@
 package no.ndla.imageapi.repository
 
 import com.typesafe.scalalogging.LazyLogging
-import no.ndla.imageapi.controller.LanguageTagSerializer
+import no.ndla.imageapi.controller.{LanguageTagSerializer, LicenseSerializer}
 import no.ndla.imageapi.integration.DataSource
 import no.ndla.imageapi.model.api.StoredParameters
 import no.ndla.imageapi.model.domain.{ImageMetaInformation, ParameterInformation,License}
@@ -106,7 +106,7 @@ trait ImageRepository {
         .map(ParameterInformation(pi)).single().apply()
     }
 
-    implicit val formats = org.json4s.DefaultFormats + ImageMetaInformation.JSonSerializer + new LanguageTagSerializer
+    implicit val formats = org.json4s.DefaultFormats + ImageMetaInformation.JSonSerializer + new LanguageTagSerializer + new LicenseSerializer
 
     def withId(id: Long): Option[ImageMetaInformation] = {
       DB readOnly { implicit session =>

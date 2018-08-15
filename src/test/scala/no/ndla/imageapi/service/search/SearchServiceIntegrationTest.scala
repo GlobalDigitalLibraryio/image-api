@@ -10,6 +10,7 @@ package no.ndla.imageapi.service.search
 import java.util.Date
 
 import io.digitallibrary.language.model.LanguageTag
+import io.digitallibrary.license.model
 import io.digitallibrary.network.ApplicationUrl
 import javax.servlet.http.HttpServletRequest
 import no.ndla.imageapi.ImageApiProperties.{DefaultPageSize, MaxPageSize}
@@ -40,10 +41,10 @@ class SearchServiceIntegrationTest extends UnitSuite with TestEnvironment {
   val largeImage = Image("large-full-url", 10000, "jpg")
   val smallImage = Image("small-full-url", 100, "jpg")
 
-  val byNcSa = Copyright(License("by-nc-sa", "Attribution-NonCommercial-ShareAlike", None), "Gotham City", List(Author("Forfatter", "DC Comics")), List(), List(), None, None, None)
-  val publicDomain = Copyright(License("publicdomain", "Public Domain", None), "Metropolis", List(Author("Forfatter", "Bruce Wayne")), List(), List(), None, None, None)
+  val byNcSa = Copyright(model.License("cc-by-nc-sa-2.0"), "Gotham City", List(Author("Forfatter", "DC Comics")), List(), List(), None, None, None)
+  val publicDomain = Copyright(model.License("cc0-1.0"), "Metropolis", List(Author("Forfatter", "Bruce Wayne")), List(), List(), None, None, None)
   val updated: Date = new DateTime(2017, 4, 1, 12, 15, 32, DateTimeZone.UTC).toDate
-  val agreement1Copyright = api.Copyright(api.License("gnu", "gnustuff", Some("http://gnugnusen")), "Simsalabim", List(), List(), List(), None, None, None)
+  val agreement1Copyright = api.Copyright(api.License("GPL-3.0", "gnustuff", Some("http://gnugnusen")), "Simsalabim", List(), List(), List(), None, None, None)
 
   val image1 = ImageMetaInformation(Some(1), None, List(ImageTitle("Batmen er på vift med en bil", nb)), List(ImageAltText("Bilde av en bil flaggermusmann som vifter med vingene bil.", nb)), largeImage.fileName, largeImage.size, largeImage.contentType, byNcSa, List(ImageTag(List("fugl"), nb)), List(), "ndla124", updated)
   val image2 = ImageMetaInformation(Some(2), None, List(ImageTitle("Pingvinen er ute og går", nb)), List(ImageAltText("Bilde av en en pingvin som vagger borover en gate.", nb)), largeImage.fileName, largeImage.size, largeImage.contentType, publicDomain, List(ImageTag(List("fugl"), nb)), List(), "ndla124", updated)
