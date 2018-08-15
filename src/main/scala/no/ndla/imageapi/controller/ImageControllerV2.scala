@@ -11,7 +11,7 @@ package no.ndla.imageapi.controller
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.ImageApiProperties.{MaxImageFileSizeBytes, RoleWithWriteAccess}
 import no.ndla.imageapi.auth.{Role, User}
-import no.ndla.imageapi.model.api.{Error, ImageMetaInformationV2, NewImageMetaInformationV2, SearchParams, SearchResult, StoredParameters, UpdateImageMetaInformation, ValidationError}
+import no.ndla.imageapi.model.api.{Error, ImageMetaInformationV2, NewImageMetaInformationV2, SearchParams, SearchResult, StoredParameters, UpdateImageMetaInformation, ValidationError, License}
 import no.ndla.imageapi.model.domain.Sort
 import no.ndla.imageapi.model.{Language, ValidationException, ValidationMessage}
 import no.ndla.imageapi.repository.ImageRepository
@@ -260,6 +260,15 @@ trait ImageControllerV2 {
         case Success(imageMeta) => imageMeta
         case Failure(e) => errorHandler(e)
       }
+    }
+
+    val getLicenses =
+      (apiOperation[Seq[License]]("getLicenses")
+        summary "Get all licenses"
+        notes "Gets all licenses"
+        )
+    get("/licenses", operation(getLicenses)) {
+      io.digitallibrary.license.model.LicenseList.licenses.map(lic => License(lic.name, lic.description, Some(lic.url)))
     }
 
   }
