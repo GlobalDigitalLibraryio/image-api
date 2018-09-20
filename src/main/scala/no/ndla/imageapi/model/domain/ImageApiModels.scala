@@ -82,3 +82,16 @@ object ImageMetaInformation extends SQLSyntaxSupport[ImageMetaInformation] {
 }
 
 case class ReindexResult(totalIndexed: Int, millisUsed: Long)
+case class CloudinaryInfo(publicId: String, format: String, resource_type: String, height: Long, width: Long, bytes: Long, url: String)
+object MediaType extends Enumeration {
+  val XHTML: MediaType.Value = Value("application/xhtml+xml")
+  val JPEG: MediaType.Value = Value("image/jpeg")
+  val GIF: MediaType.Value = Value("image/gif")
+  val PNG: MediaType.Value = Value("image/png")
+  val CSS: MediaType.Value = Value("text/css")
+  val EPUB: MediaType.Value = Value("application/epub+zip")
+
+  def fromFileExtension(ext: String): MediaType.Value = {
+    MediaType.values.find(_.toString.equalsIgnoreCase(ext)).getOrElse(throw new RuntimeException("Unsupported image extension"))
+  }
+}

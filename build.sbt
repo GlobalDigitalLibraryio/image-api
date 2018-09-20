@@ -71,7 +71,8 @@ lazy val image_api = (project in file(".")).
       "io.sentry" % "sentry-log4j2" % "1.7.3",
       // These two are not strictly needed, for most cases, but offers better handling of loading images with encoding issues
       "com.twelvemonkeys.imageio" % "imageio-core" % "3.3.2",
-      "com.twelvemonkeys.imageio" % "imageio-jpeg" % "3.3.2"
+      "com.twelvemonkeys.imageio" % "imageio-jpeg" % "3.3.2",
+      "com.cloudinary" % "cloudinary-http44" % "1.2.1"
     )
   ).enablePlugins(DockerPlugin).enablePlugins(GitVersioning).enablePlugins(JettyPlugin)
 

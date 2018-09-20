@@ -36,7 +36,7 @@ class InternControllerTest extends UnitSuite with ScalatraSuite with TestEnviron
     s"${ImageApiProperties.ImageApiUrlBase}1",
     ImageTitle("", nob),
     ImageAltText("", nob),
-    s"${ImageApiProperties.CloudFrontUrl}/test.jpg",
+    s"${ImageApiProperties.CloudinaryUrl}/test.jpg",
     0,
     "",
     api.Copyright(api.License("CC-BY-2.0", "Creative Commons Attribution 2.0 Generic", Some("http://creativecommons.org/licenses/by/2.0/legalcode")), "", List(), List(), List(), None, None, None),

@@ -118,7 +118,7 @@ trait ConverterService {
     }
 
     def asApiUrl(url: String): String = {
-      ImageApiProperties.CloudFrontUrl + (if (url.startsWith("/")) url else "/" + url)
+      ImageApiProperties.CloudinaryUrl + (if (url.startsWith("/")) url else "/" + url)
     }
 
     def asDomainImageMetaInformationV2(imageMeta: api.NewImageMetaInformationV2, image: domain.Image): domain.ImageMetaInformation = {
@@ -127,7 +127,7 @@ trait ConverterService {
         Option(imageMeta.externalId),
         Seq(asDomainTitle(imageMeta.title, imageMeta.language)),
         Seq(asDomainAltText(imageMeta.alttext, imageMeta.language)),
-        parse(image.fileName).toString,
+        image.fileName,
         image.size,
         image.contentType,
         toDomainCopyright(imageMeta.copyright),

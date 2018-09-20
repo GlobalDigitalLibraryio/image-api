@@ -16,7 +16,7 @@ import io.digitallibrary.license.model.License
 import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.model.api
 import no.ndla.imageapi.model.domain._
-import no.ndla.imageapi.{TestEnvironment, UnitSuite}
+import no.ndla.imageapi.{ImageApiProperties, TestEnvironment, UnitSuite}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.mockito.Mockito._
 
@@ -61,7 +61,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
     val api = converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(DefaultImageMetaInformation, english)
     api.get.metaUrl should equal ("http://image-api/v2/images/1")
-    api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
+
+    api.get.imageUrl should equal (s"${ImageApiProperties.CloudinaryUrl}/123.png")
   }
 
   test("That asApiImageMetaInformationWithDomainUrlAndSingleLanguage returns links with domain urls") {
@@ -69,7 +70,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
     val api = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(DefaultImageMetaInformation, english)
     api.get.metaUrl should equal ("http://local.digitallibrary.io/image-api/v2/images/1")
-    api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
+    api.get.imageUrl should equal (s"${ImageApiProperties.CloudinaryUrl}/123.png")
   }
 
   test("That asApiImageMetaInformationWithApplicationUrlAndSingleLanguage returns links even if language is not supported") {
@@ -77,7 +78,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
     val api = converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(DefaultImageMetaInformation, english)
 
     api.get.metaUrl should equal ("http://image-api/v2/images/1")
-    api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
+    api.get.imageUrl should equal (s"${ImageApiProperties.CloudinaryUrl}/123.png")
   }
 
   test("That asApiImageMetaInformationWithDomainUrlAndSingleLanguage returns links even if language is not supported") {
@@ -85,7 +86,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
     val api = converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(DefaultImageMetaInformation, english)
     api.get.metaUrl should equal ("http://local.digitallibrary.io/image-api/v2/images/1")
-    api.get.imageUrl should equal ("http://local.digitallibrary.io/image-api/raw/123.png")
+    api.get.imageUrl should equal (s"${ImageApiProperties.CloudinaryUrl}/123.png")
   }
 
   test("That asApiImageMetaInformationWithApplicationUrlV2 returns with agreement copyright features") {
@@ -111,11 +112,7 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
     apiImage.get.copyright.creators.size should equal(0)
     apiImage.get.copyright.processors.head.name should equal("Kaptein Snabelfant")
-    //apiImage.get.copyright.rightsholders.head.name should equal("Mads LakseService")
     apiImage.get.copyright.rightsholders.size should equal(1)
-    //apiImage.get.copyright.license.license should equal("gnu")
-    //apiImage.get.copyright.validFrom.get should equal(from)
-    //apiImage.get.copyright.validTo.get should equal(to)
   }
 
   test("that asImageMetaInformationV2 properly") {

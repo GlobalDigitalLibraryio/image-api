@@ -119,12 +119,12 @@ trait WriteService {
     private[service] def uploadImage(file: FileItem): Try[Image] = {
       val contentType = file.getContentType.getOrElse("")
       val bytes = file.get()
-      val fileName = filenameToHashFilename(file.name, md5Hash(bytes))
-      if (imageStorage.objectExists(fileName)) {
-        logger.info(s"$fileName already exists in S3, skipping upload and using existing image")
-        Success(Image(fileName, file.size, contentType))
+      val storageKey = md5Hash(bytes)
+      if (imageStorage.objectExists(storageKey)) {
+        logger.info(s"$storageKey already exists in S3, skipping upload and using existing image")
+        Success(Image(storageKey, file.size, contentType))
       } else {
-        imageStorage.uploadFromStream(new ByteArrayInputStream(bytes), fileName, contentType, file.size).map(filePath => {
+        imageStorage.uploadFromStream(new ByteArrayInputStream(bytes), storageKey, contentType, file.size).map(filePath => {
           Image(filePath, file.size, contentType)
         })
       }
