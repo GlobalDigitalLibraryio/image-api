@@ -1,10 +1,9 @@
 package no.ndla.imageapi.controller
 
 import javax.servlet.http.HttpServletRequest
-
 import com.netaporter.uri.Uri.{parse => uriParse}
 import no.ndla.imageapi.model.api.{Error, RawImageQueryParameters}
-import no.ndla.imageapi.model.domain.ImageStream
+import no.ndla.imageapi.model.domain.{ImageStream, StorageService}
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.{ConverterService, ImageConverter, ImageStorageService}
 import org.scalatra.Ok
@@ -91,7 +90,7 @@ trait RawController {
           doubleOrNone("storedRatio")
             .flatMap(storedRatio => imageRepository.getStoredParametersFor(imageUrl, storedRatio.toString))
             match {
-            case Some(storedParameters) => Right(url(converterService.asApiUrl(imageUrl),
+            case Some(storedParameters) => Right(url(converterService.asApiUrl(Some(StorageService.AWS), imageUrl),
               read[Map[String, String]](write(storedParameters.rawImageQueryParameters.copy(
                 width = intOrNoneWithValidation("width"), height = intOrNoneWithValidation("height")))),
               absolutize = false

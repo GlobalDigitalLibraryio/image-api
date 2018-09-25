@@ -39,7 +39,8 @@ case class ImageMetaInformation(
   tags: Seq[ImageTag],
   captions: Seq[ImageCaption],
   updatedBy: String,
-  updated: Date
+  updated: Date,
+  storageService: Option[StorageService.Value]
 )
 
 object ParameterInformation extends SQLSyntaxSupport[StoredParameters] {
@@ -77,7 +78,7 @@ object ImageMetaInformation extends SQLSyntaxSupport[ImageMetaInformation] {
   def apply(im: ResultName[ImageMetaInformation])(rs: WrappedResultSet): ImageMetaInformation = {
     val meta = read[ImageMetaInformation](rs.string(im.c("metadata")))
     ImageMetaInformation(Some(rs.long(im.c("id"))), rs.stringOpt(im.c("external_id")), meta.titles, meta.alttexts, meta.imageUrl, meta.size, meta.contentType,
-      meta.copyright, meta.tags, meta.captions, meta.updatedBy, meta.updated)
+      meta.copyright, meta.tags, meta.captions, meta.updatedBy, meta.updated, Some(StorageService.valueOf(rs.string(im.c("storage_service")))))
   }
 }
 
@@ -93,5 +94,13 @@ object MediaType extends Enumeration {
 
   def fromFileExtension(ext: String): MediaType.Value = {
     MediaType.values.find(_.toString.equalsIgnoreCase(ext)).getOrElse(throw new RuntimeException("Unsupported image extension"))
+  }
+}
+
+object StorageService extends Enumeration {
+  val AWS, CLOUDINARY = Value
+
+  def valueOf(s: String): StorageService.Value = {
+    StorageService.values.find(_.toString == s.toUpperCase).getOrElse(CLOUDINARY)
   }
 }

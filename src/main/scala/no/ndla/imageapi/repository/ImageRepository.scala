@@ -131,8 +131,8 @@ trait ImageRepository {
       dataObject.setValue(write(imageMeta))
 
       val imageId = externalId match {
-        case Some(ext) => sql"insert into imagemetadata(external_id, metadata) values (${ext}, ${dataObject})".updateAndReturnGeneratedKey.apply
-        case None => sql"insert into imagemetadata(metadata) values (${dataObject})".updateAndReturnGeneratedKey.apply
+        case Some(ext) => sql"insert into imagemetadata(external_id, metadata, storage_service) values (${ext}, ${dataObject}, ${imageMeta.storageService.toString})".updateAndReturnGeneratedKey.apply
+        case None => sql"insert into imagemetadata(metadata, storage_service) values (${dataObject}, ${imageMeta.storageService.toString})".updateAndReturnGeneratedKey.apply
       }
 
       imageMeta.copy(id = Some(imageId))
@@ -146,7 +146,7 @@ trait ImageRepository {
       dataObject.setValue(json)
 
       DB localTx { implicit session =>
-        val imageId = sql"insert into imagemetadata(external_id, metadata) values(${externalId}, ${dataObject})".updateAndReturnGeneratedKey.apply
+        val imageId = sql"insert into imagemetadata(external_id, metadata, storage_service) values(${externalId}, ${dataObject}, ${imageMetaInformation.storageService.toString})".updateAndReturnGeneratedKey.apply
         imageMetaInformation.copy(id = Some(imageId))
       }
     }

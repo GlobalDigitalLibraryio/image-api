@@ -11,6 +11,7 @@ package no.ndla.imageapi.controller
 import io.digitallibrary.language.model.LanguageTag
 import io.digitallibrary.license.model.License
 import no.ndla.imageapi.model.api.{ImageAltText, ImageCaption, ImageTag, ImageTitle}
+import no.ndla.imageapi.model.domain.StorageService
 import no.ndla.imageapi.model.{api, domain}
 import no.ndla.imageapi.{ImageApiProperties, TestEnvironment, UnitSuite}
 import org.joda.time.{DateTime, DateTimeZone}
@@ -44,7 +45,7 @@ class InternControllerTest extends UnitSuite with ScalatraSuite with TestEnviron
     ImageCaption("", nob),
     Seq())
 
-  val DefaultDomainImageMetaInformation = domain.ImageMetaInformation(Some(1), None, List(), List(), "test.jpg", 0, "", domain.Copyright(License("cc-by-2.0"), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
+  val DefaultDomainImageMetaInformation = domain.ImageMetaInformation(Some(1), None, List(), List(), "test.jpg", 0, "", domain.Copyright(License("cc-by-2.0"), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated, Some(StorageService.CLOUDINARY))
 
   override def beforeEach = {
     reset(imageRepository, indexService, indexBuilderService)

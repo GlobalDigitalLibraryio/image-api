@@ -1,0 +1,1 @@
+ALTER TABLE imagemetadata ADD COLUMN storage_service TEXT not null DEFAULT 'AWS';

@@ -16,6 +16,7 @@ import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.auth.User
 import no.ndla.imageapi.model.Language._
+import no.ndla.imageapi.model.domain.StorageService
 import no.ndla.imageapi.model.{api, domain}
 
 trait ConverterService {
@@ -70,7 +71,7 @@ trait ConverterService {
         metaUrl = baseUrl + imageMeta.id.get,
         title = title,
         alttext = alttext,
-        imageUrl = asApiUrl(imageMeta.imageUrl),
+        imageUrl = asApiUrl(imageMeta.storageService, imageMeta.imageUrl),
         size = imageMeta.size,
         contentType = imageMeta.contentType,
         copyright = withAgreementCopyright(asApiCopyright(imageMeta.copyright)),
@@ -117,8 +118,11 @@ trait ConverterService {
       api.License(domainLicense.name, domainLicense.description, Some(domainLicense.url))
     }
 
-    def asApiUrl(url: String): String = {
-      ImageApiProperties.CloudinaryUrl + (if (url.startsWith("/")) url else "/" + url)
+    def asApiUrl(storageService: Option[StorageService.Value], url: String): String = {
+      storageService match {
+        case Some(StorageService.AWS) => ImageApiProperties.CloudFrontUrl + (if (url.startsWith("/")) url else "/" + url)
+        case _ => ImageApiProperties.CloudinaryUrl + (if (url.startsWith("/")) url else "/" + url)
+      }
     }
 
     def asDomainImageMetaInformationV2(imageMeta: api.NewImageMetaInformationV2, image: domain.Image): domain.ImageMetaInformation = {
@@ -134,7 +138,8 @@ trait ConverterService {
         if (imageMeta.tags.nonEmpty) Seq(toDomainTag(imageMeta.tags, imageMeta.language)) else Seq.empty,
         Seq(domain.ImageCaption(imageMeta.caption, imageMeta.language)),
         authUser.userOrClientid(),
-        clock.now()
+        clock.now(),
+        Some(StorageService.CLOUDINARY)
       )
     }
 

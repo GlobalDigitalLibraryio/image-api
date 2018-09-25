@@ -28,8 +28,8 @@ class ConverterServiceTest extends UnitSuite with TestEnvironment {
 
   val full = Image("/123.png", 200, "image/png")
   val nob = LanguageTag("nb")
-  val DefaultImageMetaInformation = ImageMetaInformation(Some(1), None, List(ImageTitle("test", nob)), List(), full.fileName, full.size, full.contentType, Copyright(License("cc-by-2.0"), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
-  val MultiLangImage = ImageMetaInformation(Some(2), None, List(ImageTitle("nynorsk", LanguageTag("nn")), ImageTitle("english", LanguageTag("en")), ImageTitle("norsk", LanguageTag("und"))), List(), full.fileName, full.size, full.contentType, Copyright(License("cc-by-2.0"), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated)
+  val DefaultImageMetaInformation = ImageMetaInformation(Some(1), None, List(ImageTitle("test", nob)), List(), full.fileName, full.size, full.contentType, Copyright(License("cc-by-2.0"), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated, Some(StorageService.CLOUDINARY))
+  val MultiLangImage = ImageMetaInformation(Some(2), None, List(ImageTitle("nynorsk", LanguageTag("nn")), ImageTitle("english", LanguageTag("en")), ImageTitle("norsk", LanguageTag("und"))), List(), full.fileName, full.size, full.contentType, Copyright(License("cc-by-2.0"), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated, Some(StorageService.CLOUDINARY))
   val english = LanguageTag("eng")
 
   override def beforeEach: Unit = {

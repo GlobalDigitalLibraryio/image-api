@@ -140,7 +140,7 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
     val agreementElg = ImageMetaInformation(Some(1), None, List(ImageTitle("Elg i busk", nob)), List(ImageAltText("Elg i busk", nob)),
       "Elg.jpg", 2865539, "image/jpeg",
       Copyright(TestData.ByNcSa, "http://www.scanpix.no", List(Author("Fotograf", "Test Testesen")), List(Author("Redaksjonelt", "Kåre Knegg")), List(Author("Leverandør", "Leverans Leveransensen")), Some(1), None, None),
-      List(ImageTag(List("rovdyr", "elg"), nob)), List(ImageCaption("Elg i busk", nob)), "ndla124", TestData.updated())
+      List(ImageTag(List("rovdyr", "elg"), nob)), List(ImageCaption("Elg i busk", nob)), "ndla124", TestData.updated(), Some(StorageService.CLOUDINARY))
 
     when(imageRepository.withId(1)).thenReturn(Option(agreementElg))
 
@@ -170,7 +170,7 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
     val tags: Seq[ImageTag] = Seq()
     val captions: Seq[ImageCaption] = Seq()
 
-    val sampleImageMeta = ImageMetaInformation(Some(1), None, titles, alttexts, "http://some.url/img.jpg", 1024, "image/jpeg", copyright, tags, captions, "updatedBy", new Date())
+    val sampleImageMeta = ImageMetaInformation(Some(1), None, titles, alttexts, "http://some.url/img.jpg", 1024, "image/jpeg", copyright, tags, captions, "updatedBy", new Date(), Some(StorageService.CLOUDINARY))
 
     when(imageRepository.withExternalId("ext1")).thenReturn(None)
     when(writeService.storeNewImage(any[NewImageMetaInformationV2], any[FileItem])).thenReturn(Success(sampleImageMeta))
