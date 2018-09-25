@@ -9,16 +9,19 @@
 package no.ndla.imageapi.service
 
 import java.awt.image.BufferedImage
-import java.io.InputStream
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
 import java.net.URL
 
+import com.amazonaws.services.s3.model.{GetObjectRequest, S3Object}
 import com.typesafe.scalalogging.LazyLogging
 import javax.imageio.ImageIO
+import no.ndla.imageapi.ImageApiProperties.StorageName
 import no.ndla.imageapi.integration.{AmazonClient, CloudinaryClient}
+import no.ndla.imageapi.model.ImageNotFoundException
 import no.ndla.imageapi.model.domain.{CloudinaryInfo, Image, ImageStream, MediaType}
 import scalaj.http.HttpRequest
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait ImageStorageService {
   this: AmazonClient with CloudinaryClient =>
@@ -33,8 +36,28 @@ trait ImageStorageService {
       override val sourceImage: BufferedImage = ImageIO.read(new URL(cloudinaryImage.url))
     }
 
+    case class NdlaImage(s3Object: S3Object, fileName: String) extends ImageStream {
+      override val sourceImage: BufferedImage = {
+        val stream = s3Object.getObjectContent
+        val content = ImageIO.read(stream)
+        stream.close()
+        content
+      }
+
+      override def contentType: String = s3Object.getObjectMetadata.getContentType
+
+      override def stream: InputStream = {
+        val outputStream = new ByteArrayOutputStream()
+        ImageIO.write(sourceImage, format, outputStream)
+        new ByteArrayInputStream(outputStream.toByteArray)
+      }
+    }
+
     def get(imageKey: String): Try[ImageStream] = {
-      cloudinaryClient.getInformation(imageKey).map(info => CloudinaryImage(info, imageKey))
+      Try(amazonClient.getObject(new GetObjectRequest(StorageName, imageKey))).map(s3Object => NdlaImage(s3Object, imageKey)) match {
+        case Success(e) => Success(e)
+        case Failure(e) => Failure(new ImageNotFoundException(s"Image $imageKey does not exist"))
+      }
     }
 
     def uploadFromUrl(image: Image, storageKey: String, request: HttpRequest): Try[String] =
