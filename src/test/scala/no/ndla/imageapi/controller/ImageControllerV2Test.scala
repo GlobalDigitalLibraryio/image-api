@@ -11,7 +11,7 @@ package no.ndla.imageapi.controller
 import java.util.Date
 
 import io.digitallibrary.language.model.LanguageTag
-import io.digitallibrary.license.model.{LicenseList, License}
+import io.digitallibrary.license.model.{License, LicenseList}
 import no.ndla.imageapi.ImageApiProperties.MaxImageFileSizeBytes
 import no.ndla.imageapi.model.api.{NewImageMetaInformationV2, SearchResult, UpdateImageMetaInformation}
 import no.ndla.imageapi.model.domain.{Sort, _}
@@ -26,6 +26,7 @@ import org.mockito.Mockito._
 import org.scalatra.servlet.FileItem
 import org.scalatra.test.Uploadable
 import org.scalatra.test.scalatest.ScalatraSuite
+import scalikejdbc.DBSession
 
 import scala.util.{Failure, Success, Try}
 
@@ -124,6 +125,7 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
     val expectedBody = s"""{"id":"1","metaUrl":"$testUrl","title":{"title":"Elg i busk","language":"nb"},"alttext":{"alttext":"Elg i busk","language":"nb"},"imageUrl":"$testUrl","size":2865539,"contentType":"image/jpeg","copyright":{"license":{"license":"CC-BY-NC-SA-4.0","description":"Creative Commons Attribution Non Commercial Share Alike 4.0 International","url":"http://creativecommons.org/licenses/by-nc-sa/4.0/legalcode"},"origin":"http://www.scanpix.no","creators":[{"type":"Fotograf","name":"Test Testesen"}],"processors":[{"type":"Redaksjonelt","name":"Kåre Knegg"}],"rightsholders":[{"type":"Leverandør","name":"Leverans Leveransensen"}]},"tags":{"tags":["rovdyr","elg"],"language":"nb"},"caption":{"caption":"Elg i busk","language":"nb"},"supportedLanguages":["nb"]}"""
     val expectedObject = JsonParser.parse(expectedBody).extract[api.ImageMetaInformationV2]
     when(imageRepository.withId(1)).thenReturn(Option(TestData.elg))
+    when(imageRepository.getImageVariants(any[String])(any[DBSession])).thenReturn(Map[String,ImageVariant]())
 
     get("/1") {
       status should equal(200)
@@ -143,6 +145,7 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
       List(ImageTag(List("rovdyr", "elg"), nob)), List(ImageCaption("Elg i busk", nob)), "ndla124", TestData.updated(), Some(StorageService.CLOUDINARY))
 
     when(imageRepository.withId(1)).thenReturn(Option(agreementElg))
+    when(imageRepository.getImageVariants(any[String])(any[DBSession])).thenReturn(Map[String,ImageVariant]())
 
     get("/1") {
       status should equal(200)
@@ -235,45 +238,6 @@ class ImageControllerV2Test extends UnitSuite with ScalatraSuite with TestEnviro
 
   test("That PATCH /<id> returns 403 when not permitted") {
     patch("/1", Map("metadata" -> sampleUpdateImageMeta), headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
-      status should equal(403)
-    }
-  }
-
-  test("That GET /stored-parameters/123abc.jpg returns 200 with stored parameters when they exist") {
-    val params = StoredParameters(imageUrl = "/123abc.jpg", forRatio = "0.81", revision = Some(1), rawImageQueryParameters = RawImageQueryParameters(width = Some(400), height = Some(200), cropStartX = Some(20), cropStartY = Some(5), cropEndX = Some(40), cropEndY = Some(100), focalX = None, focalY = None, ratio = Some("0.81")))
-    when(imageRepository.getStoredParameters("/123abc.jpg")).thenReturn(Some(Seq(params)))
-    get("/stored-parameters/123abc.jpg") {
-      status should equal(200)
-    }
-  }
-
-  test("That GET /stored-parameters/xxx.jpg returns 404 when stored-parameters doesn't exist") {
-    when(imageRepository.getStoredParameters("/xxx.jpg")).thenReturn(None)
-    get("/stored-parameters/xxx.jpg") {
-      status should equal(404)
-    }
-  }
-
-  test("That POST /stored-parameters without acceptable body is rejected") {
-    post("/stored-parameters", "{}", headers = Map("Authorization" -> authHeaderWithWriteRole)) {
-      status should equal(400)
-    }
-  }
-
-  test("That POST /stored-parameters with acceptable body is accepted") {
-    post("/stored-parameters", """ {"imageUrl": "/123abc.jpg", "forRatio": "0.81", "rawImageQueryParameters": {"focalX": 50} } """, headers = Map("Authorization" -> authHeaderWithWriteRole)) {
-      status should equal(200)
-    }
-  }
-
-  test("That POST /stored-parameters checks authorization") {
-    post("/stored-parameters") {
-      status should equal(403)
-    }
-    post("/stored-parameters", headers = Map("Authorization" -> authHeaderWithoutAnyRoles)) {
-      status should equal(403)
-    }
-    post("/stored-parameters", headers = Map("Authorization" -> authHeaderWithWrongRole)) {
       status should equal(403)
     }
   }

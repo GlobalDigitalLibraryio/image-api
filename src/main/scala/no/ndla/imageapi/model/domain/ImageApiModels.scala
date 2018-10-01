@@ -27,6 +27,7 @@ case class ImageTag(tags: Seq[String], language: LanguageTag) extends LanguageFi
 case class Image(fileName: String, size: Long, contentType: String)
 case class Copyright(license: License, origin: String, creators: Seq[Author], processors: Seq[Author], rightsholders: Seq[Author], agreementId: Option[Long], validFrom: Option[Date], validTo: Option[Date])
 case class Author(`type`: String, name: String)
+case class ImageVariant(imageUrl: String, ratio: String, revision: Option[Int], topLeftX: Int, topLeftY: Int, width: Int, height: Int)
 case class ImageMetaInformation(
   id: Option[Long],
   externalId: Option[String],
@@ -64,6 +65,24 @@ object ParameterInformation extends SQLSyntaxSupport[StoredParameters] {
         focalY = rs.intOpt(im.c("focal_y")),
         ratio = rs.stringOpt(im.c("ratio")))
     )
+  }
+}
+
+object ImageVariant extends SQLSyntaxSupport[ImageVariant] {
+  implicit val formats: Formats = org.json4s.DefaultFormats
+  override val tableName = "image_variants"
+  override val schemaName = Some(ImageApiProperties.MetaSchema)
+
+  def apply(im: SyntaxProvider[ImageVariant])(rs: WrappedResultSet): ImageVariant = apply(im.resultName)(rs)
+  def apply(im: ResultName[ImageVariant])(rs: WrappedResultSet): ImageVariant = {
+    ImageVariant(
+      rs.string(im.c("image_url")),
+      rs.string(im.c("ratio")),
+      rs.intOpt(im.c("revision")),
+      rs.int(im.c("top_left_x")),
+      rs.int(im.c("top_left_y")),
+      rs.int(im.c("width")),
+      rs.int(im.c("height")))
   }
 }
 

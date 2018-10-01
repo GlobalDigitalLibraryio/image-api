@@ -16,7 +16,7 @@ import io.digitallibrary.network.ApplicationUrl
 import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.auth.User
 import no.ndla.imageapi.model.Language._
-import no.ndla.imageapi.model.domain.StorageService
+import no.ndla.imageapi.model.domain.{Image, ImageMetaInformation, ImageVariant, StorageService}
 import no.ndla.imageapi.model.{api, domain}
 
 trait ConverterService {
@@ -24,6 +24,9 @@ trait ConverterService {
   val converterService: ConverterService
 
   class ConverterService extends LazyLogging {
+    def asDomainImageVariant(imageUrl: String, variant: api.ImageVariant): domain.ImageVariant = {
+      ImageVariant(imageUrl, variant.ratio, variant.revision, variant.topLeftX, variant.topLeftY, variant.width, variant.height)
+    }
 
 
     def asApiAuthor(domainAuthor: domain.Author): api.Author = {
@@ -50,15 +53,24 @@ trait ConverterService {
       api.ImageAltText(domainImageAltText.alttext, domainImageAltText.language)
     }
 
-    def asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationV2] = {
-      asImageMetaInformationV2(domainImageMetaInformation, language, ApplicationUrl.get)
+    def asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag, variants: Map[String, ImageVariant]): Option[api.ImageMetaInformationV2] = {
+      asImageMetaInformationV2(domainImageMetaInformation, language, ApplicationUrl.get, variants)
     }
 
-    def asApiImageMetaInformationWithDomainUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag): Option[api.ImageMetaInformationV2] = {
-      asImageMetaInformationV2(domainImageMetaInformation, language, ImageApiProperties.ImageApiUrlBase.replace("v1", "v2"))
+    def asApiImageMetaInformationWithDomainUrlAndSingleLanguage(domainImageMetaInformation: domain.ImageMetaInformation, language: LanguageTag, variants: Map[String, ImageVariant]): Option[api.ImageMetaInformationV2] = {
+      asImageMetaInformationV2(domainImageMetaInformation, language, ImageApiProperties.ImageApiUrlBase.replace("v1", "v2"), variants)
     }
 
-    private def asImageMetaInformationV2(imageMeta: domain.ImageMetaInformation, language: LanguageTag, baseUrl: String): Option[api.ImageMetaInformationV2] = {
+    def asApiImageVariants(variants: Map[String, domain.ImageVariant]): Option[Map[String, api.ImageVariant]] = {
+      val apiVariants = variants.map(entry => (entry._1, asApiImageVariant(entry._2)))
+      if(apiVariants.isEmpty) None else Some(apiVariants)
+    }
+
+    def asApiImageVariant(variant: domain.ImageVariant): api.ImageVariant = {
+      api.ImageVariant(variant.ratio, variant.revision, variant.topLeftX, variant.topLeftY, variant.width, variant.height)
+    }
+
+    private def asImageMetaInformationV2(imageMeta: domain.ImageMetaInformation, language: LanguageTag, baseUrl: String, variants: Map[String, ImageVariant]): Option[api.ImageMetaInformationV2] = {
       val defaultLanguage = DefaultLanguage
       val title = findByLanguageOrBestEffort(imageMeta.titles, language).map(asApiImageTitle).getOrElse(api.ImageTitle("", defaultLanguage))
       val alttext = findByLanguageOrBestEffort(imageMeta.alttexts, language).map(asApiImageAltText).getOrElse(api.ImageAltText("", defaultLanguage))
@@ -71,13 +83,15 @@ trait ConverterService {
         metaUrl = baseUrl + imageMeta.id.get,
         title = title,
         alttext = alttext,
-        imageUrl = asApiUrl(imageMeta.storageService, imageMeta.imageUrl),
+        imageUrl = ImageUrlBuilder.urlFor(imageMeta),
         size = imageMeta.size,
         contentType = imageMeta.contentType,
         copyright = withAgreementCopyright(asApiCopyright(imageMeta.copyright)),
         tags = tags,
         caption = caption,
-        supportedLanguages = getSupportedLanguages(imageMeta)))
+        supportedLanguages = getSupportedLanguages(imageMeta),
+        imageVariants = asApiImageVariants(variants)
+      ))
     }
 
     def withAgreementCopyright(image: domain.ImageMetaInformation): domain.ImageMetaInformation = {

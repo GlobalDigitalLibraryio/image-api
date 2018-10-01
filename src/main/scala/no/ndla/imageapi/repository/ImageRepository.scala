@@ -11,12 +11,15 @@ package no.ndla.imageapi.repository
 import com.typesafe.scalalogging.LazyLogging
 import no.ndla.imageapi.controller.{LanguageTagSerializer, LicenseSerializer}
 import no.ndla.imageapi.integration.DataSource
+import no.ndla.imageapi.model.api
 import no.ndla.imageapi.model.api.StoredParameters
-import no.ndla.imageapi.model.domain.{ImageMetaInformation, ParameterInformation}
+import no.ndla.imageapi.model.domain.{ImageMetaInformation, ImageVariant, ParameterInformation}
 import no.ndla.imageapi.service.ConverterService
 import org.json4s.native.Serialization.write
 import org.postgresql.util.PGobject
 import scalikejdbc._
+
+import scala.util.Try
 
 
 trait ImageRepository {
@@ -25,86 +28,6 @@ trait ImageRepository {
 
   class ImageRepository extends LazyLogging {
 
-    def insertOrUpdateStoredParameters(parameters: StoredParameters)(implicit session: DBSession = AutoSession): StoredParameters = {
-      getStoredParametersFor(parameters.imageUrl, parameters.forRatio) match {
-        case Some(_) => updateStoredParameters(parameters.imageUrl, parameters)
-        case None => insertStoredParameters(parameters.imageUrl, parameters)
-      }
-    }
-
-    def insertStoredParameters(imageUrl: String, parameters: StoredParameters)(implicit session: DBSession = AutoSession): StoredParameters = {
-      val c = ParameterInformation.column
-      val startRevision = 1
-      val r = parameters.rawImageQueryParameters
-      val count = QueryDSL.insertInto(ParameterInformation).namedValues(
-        c.c("image_url") -> imageUrl,
-        c.c("for_ratio") -> parameters.forRatio,
-        c.c("width") -> r.width,
-        c.c("height") -> r.height,
-        c.c("crop_start_x") -> r.cropStartX,
-        c.c("crop_start_y") -> r.cropStartY,
-        c.c("crop_end_x") -> r.cropEndX,
-        c.c("crop_end_y") -> r.cropEndY,
-        c.c("focal_x") -> r.focalX,
-        c.c("focal_y") -> r.focalY,
-        c.c("ratio") -> r.ratio,
-        c.revision -> startRevision
-      ).toSQL.update().apply()
-      if (count != 1) {
-        throw new RuntimeException(s"Failed to insert raw image query parameters for imageUrl=$imageUrl")
-      } else {
-        parameters.copy(revision = Some(startRevision))
-      }
-    }
-
-    def updateStoredParameters(imageUrl: String, parameters: StoredParameters)(implicit session: DBSession = AutoSession): StoredParameters = {
-      val c = ParameterInformation.column
-      val nextRevision = parameters.revision.map(_ + 1).getOrElse(1)
-      val r = parameters.rawImageQueryParameters
-      val count = QueryDSL.update(ParameterInformation).set(
-        c.c("width") -> r.width,
-        c.c("height") -> r.height,
-        c.c("crop_start_x") -> r.cropStartX,
-        c.c("crop_start_y") -> r.cropStartY,
-        c.c("crop_end_x") -> r.cropEndX,
-        c.c("crop_end_y") -> r.cropEndY,
-        c.c("focal_x") -> r.focalX,
-        c.c("focal_y") -> r.focalY,
-        c.c("ratio") -> r.ratio,
-        c.revision -> nextRevision
-      ).where
-        .eq(c.imageUrl, imageUrl).and
-        .eq(c.forRatio, parameters.forRatio).and
-        .eq(c.revision, parameters.revision)
-        .toSQL.update().apply()
-      if (count != 1) {
-        throw new OptimisticLockException()
-      } else {
-        parameters.copy(revision = Some(nextRevision))
-      }
-    }
-
-    def getStoredParameters(imageUrl: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[Seq[StoredParameters]] = {
-      val pi = ParameterInformation.syntax
-      val results = select
-        .from(ParameterInformation as pi)
-        .where.eq(pi.imageUrl, imageUrl).toSQL
-        .map(ParameterInformation(pi)).list().apply()
-      if (results.nonEmpty) {
-        Some(results)
-      } else {
-        None
-      }
-    }
-
-    def getStoredParametersFor(imageUrl: String, forRatio: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[StoredParameters] = {
-      val pi = ParameterInformation.syntax
-      select
-        .from(ParameterInformation as pi)
-        .where.eq(pi.imageUrl, imageUrl)
-          .and.eq(pi.forRatio, forRatio).toSQL
-        .map(ParameterInformation(pi)).single().apply()
-    }
 
     implicit val formats = org.json4s.DefaultFormats + ImageMetaInformation.JSonSerializer + new LanguageTagSerializer + new LicenseSerializer
 
@@ -112,6 +35,68 @@ trait ImageRepository {
       DB readOnly { implicit session =>
         imageMetaInformationWhere(sqls"im.id = $id")
       }
+    }
+
+    def insertImageVariant(variant: ImageVariant)(implicit session: DBSession = AutoSession): Try[ImageVariant] = {
+      val iv = ImageVariant.column
+      val startRevision = 1
+
+      Try{
+        insert.into(ImageVariant).namedValues(
+          iv.imageUrl -> variant.imageUrl,
+          iv.ratio -> variant.ratio,
+          iv.revision -> startRevision,
+          iv.topLeftX -> variant.topLeftX,
+          iv.topLeftY -> variant.topLeftY,
+          iv.width -> variant.width,
+          iv.height -> variant.height
+        ).toSQL.update().apply()
+
+        variant.copy(revision = Some(startRevision))
+      }
+    }
+
+    def updateImageVariant(variant: ImageVariant)(implicit session: DBSession = AutoSession): Try[ImageVariant] = {
+      val iv = ImageVariant.column
+      val newRevision = variant.revision.getOrElse(0) + 1
+
+      Try {
+        val count = update(ImageVariant).set(
+          iv.revision -> newRevision,
+          iv.ratio -> variant.ratio,
+          iv.topLeftX -> variant.topLeftX,
+          iv.topLeftY -> variant.topLeftY,
+          iv.width -> variant.width,
+          iv.height -> variant.height
+        ).where
+          .eq(iv.imageUrl, variant.imageUrl).and
+          .eq(iv.ratio, variant.ratio).and
+          .eq(iv.revision, variant.revision).toSQL.update().apply()
+
+        if(count != 1){
+          throw new OptimisticLockException()
+        } else {
+          variant.copy(revision = Some(newRevision))
+        }
+      }
+    }
+
+    def getImageVariants(imageUrl: String)(implicit session: DBSession = ReadOnlyAutoSession): Map[String, ImageVariant] = {
+      val iv = ImageVariant.syntax
+      select
+        .from(ImageVariant as iv)
+        .where.eq(iv.imageUrl, imageUrl).toSQL
+        .map(ImageVariant(iv)).list().apply()
+        .map(r => r.ratio -> r).toMap
+    }
+
+    def getImageVariant(imageUrl: String, ratio: String)(implicit session: DBSession = ReadOnlyAutoSession): Option[ImageVariant] = {
+      val iv = ImageVariant.syntax
+      select
+        .from(ImageVariant as iv)
+        .where.eq(iv.imageUrl, imageUrl)
+        .and.eq(iv.ratio, ratio).toSQL
+        .map(ImageVariant(iv)).single().apply()
     }
 
    def getRandomImage()(implicit session: DBSession = ReadOnlyAutoSession): Option[ImageMetaInformation] = {
@@ -125,7 +110,7 @@ trait ImageRepository {
       }
     }
 
-    def insert(imageMeta: ImageMetaInformation, externalId: Option[String] = None)(implicit session: DBSession = AutoSession) = {
+    def insertImageMeta(imageMeta: ImageMetaInformation, externalId: Option[String] = None)(implicit session: DBSession = AutoSession) = {
       val dataObject = new PGobject()
       dataObject.setType("jsonb")
       dataObject.setValue(write(imageMeta))
@@ -151,7 +136,7 @@ trait ImageRepository {
       }
     }
 
-    def update(imageMetaInformation: ImageMetaInformation, id: Long): ImageMetaInformation = {
+    def updateImageMeta(imageMetaInformation: ImageMetaInformation, id: Long): ImageMetaInformation = {
       val json = write(imageMetaInformation)
       val dataObject = new PGobject()
       dataObject.setType("jsonb")

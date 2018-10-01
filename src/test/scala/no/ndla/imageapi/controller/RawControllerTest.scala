@@ -41,12 +41,6 @@ class RawControllerTest extends UnitSuite with ScalatraSuite with TestEnvironmen
     }
   }
 
-  test("That GET /image.jpg includes cache control headers if image was found") {
-    get(s"/$imageName") {
-      response.headers.get("Cache-Control") should equal (Some(Seq("public, max-age=31536000, immutable")))
-    }
-  }
-
   test("That GET /image.jpg returns 404 if image was not found") {
     when(imageStorage.get(any[String])).thenReturn(Failure(mock[ImageNotFoundException]))
     get(s"/$imageName") {
@@ -270,51 +264,6 @@ class RawControllerTest extends UnitSuite with ScalatraSuite with TestEnvironmen
       val image = ImageIO.read(new ByteArrayInputStream(bodyBytes))
       image.getWidth should equal(189)
       image.getHeight should equal(60)
-    }
-  }
-
-  test("That GET /123.jpg?storedRatio=0.81 redirects with stored parameters when they exist") {
-    val returnParameters = StoredParameters(imageUrl = "/123.jpg", forRatio = "0.81", revision = Some(1), rawImageQueryParameters = RawImageQueryParameters(width = None, height = None, cropStartX = Some(50), cropStartY = Some(10), cropEndX = None, cropEndY = None, focalX = Some(50), focalY = Some(60), ratio = Some("0.81")))
-    when(imageRepository.getStoredParametersFor("/123.jpg", "0.81")).thenReturn(Some(returnParameters))
-    when(converterService.asApiUrl(Some(StorageService.AWS), "/123.jpg")).thenReturn("https://cloudfront-url.com/123.jpg")
-    get("/123.jpg?storedRatio=0.81") {
-      status should equal (302)
-      header.get("Location") should equal(Some("https://cloudfront-url.com/123.jpg?cropStartX=50&focalX=50&ratio=0.81&cropStartY=10&focalY=60"))
-    }
-  }
-
-  def urlToQueryParamsMap(url: String): Map[String, String] = {
-    val queries = url.substring(url.indexOf("?") + 1)
-    val keysAndValues: Array[(String, String)] = for {
-      pair: String <- queries.split('&')
-    } yield pair.split('=') match { case Array(k, v) => (k, v)}
-    keysAndValues.toMap
-  }
-
-  test("That GET /123.jpg?storedRatio=0.81&focalX=50&focalY=50&width=400 redirects with stored parameters when they exist, and keeps only width parameter") {
-    val returnParameters = StoredParameters(imageUrl = "/123.jpg", forRatio = "0.81", revision = Some(1), rawImageQueryParameters = RawImageQueryParameters(width = None, height = None, cropStartX = Some(20), cropStartY = Some(10), cropEndX = Some(30), cropEndY = Some(70), focalX = None, focalY = None, ratio = None))
-    when(imageRepository.getStoredParametersFor("/123.jpg", "0.81")).thenReturn(Some(returnParameters))
-    when(converterService.asApiUrl(Some(StorageService.AWS), "/123.jpg")).thenReturn("https://cloudfront-url.com/123.jpg")
-    get("/123.jpg?storedRatio=0.81&focalX=50&focalY=50&width=400") {
-      status should equal (302)
-      header.get("Location").map(urlToQueryParamsMap) should equal(Some(Map("cropEndY" -> "70", "cropStartX" -> "20", "cropEndX" -> "30", "cropStartY" -> "10", "width" -> "400")))
-    }
-  }
-
-  test("That GET /123.jpg?storedRatio=0.81&focalX=50&focalY=50&height=200 redirects with stored parameters when they exist, and keeps only height parameter") {
-    val returnParameters = StoredParameters(imageUrl = "/123.jpg", forRatio = "0.81", revision = Some(1), rawImageQueryParameters = RawImageQueryParameters(width = None, height = None, cropStartX = Some(20), cropStartY = Some(10), cropEndX = Some(30), cropEndY = Some(70), focalX = None, focalY = None, ratio = None))
-    when(imageRepository.getStoredParametersFor("/123.jpg", "0.81")).thenReturn(Some(returnParameters))
-    when(converterService.asApiUrl(Some(StorageService.AWS), "/123.jpg")).thenReturn("https://cloudfront-url.com/123.jpg")
-    get("/123.jpg?storedRatio=0.81&focalX=50&focalY=50&height=200") {
-      status should equal (302)
-      header.get("Location").map(urlToQueryParamsMap) should equal(Some(Map("cropEndY" -> "70", "cropStartX" -> "20", "cropEndX" -> "30", "cropStartY" -> "10", "height" -> "200")))
-    }
-  }
-
-  test("That GET /123.jpg?storedRatio=0.13 ignores parameter storedRatio when stored parameters doesn't exist for that ratio") {
-    when(imageRepository.getStoredParametersFor("/123.jpg", "0.13")).thenReturn(None)
-    get("/123.jpg?storedRatio=0.13") {
-      status should equal (200)
     }
   }
 }

@@ -11,15 +11,16 @@ package no.ndla.imageapi.controller
 import io.digitallibrary.language.model.LanguageTag
 import io.digitallibrary.license.model.License
 import no.ndla.imageapi.model.api.{ImageAltText, ImageCaption, ImageTag, ImageTitle}
-import no.ndla.imageapi.model.domain.StorageService
+import no.ndla.imageapi.model.domain.{ImageVariant, StorageService}
 import no.ndla.imageapi.model.{api, domain}
 import no.ndla.imageapi.{ImageApiProperties, TestEnvironment, UnitSuite}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.json4s.jackson.Serialization._
 import org.mockito.Matchers
-import org.mockito.Matchers.{eq => eqTo}
+import org.mockito.Matchers.{eq => eqTo, any}
 import org.mockito.Mockito._
 import org.scalatra.test.scalatest.ScalatraSuite
+import scalikejdbc.DBSession
 
 import scala.util.{Failure, Success}
 
@@ -43,7 +44,7 @@ class InternControllerTest extends UnitSuite with ScalatraSuite with TestEnviron
     api.Copyright(api.License("CC-BY-2.0", "Creative Commons Attribution 2.0 Generic", Some("http://creativecommons.org/licenses/by/2.0/legalcode")), "", List(), List(), List(), None, None, None),
     ImageTag(Seq.empty, nob),
     ImageCaption("", nob),
-    Seq())
+    Seq(), None)
 
   val DefaultDomainImageMetaInformation = domain.ImageMetaInformation(Some(1), None, List(), List(), "test.jpg", 0, "", domain.Copyright(License("cc-by-2.0"), "", List(), List(), List(), None, None, None), List(), List(), "ndla124", updated, Some(StorageService.CLOUDINARY))
 
@@ -69,6 +70,8 @@ class InternControllerTest extends UnitSuite with ScalatraSuite with TestEnviron
     implicit val formats = org.json4s.DefaultFormats + new LanguageTagSerializer
 
     when(imageRepository.withExternalId(eqTo("123"))).thenReturn(Some(DefaultDomainImageMetaInformation))
+    when(imageRepository.getImageVariants(any[String])(any[DBSession])).thenReturn(Map[String,ImageVariant]())
+
     get("/extern/123") {
       status should equal (200)
       body should equal (write(DefaultApiImageMetaInformation))
