@@ -11,7 +11,7 @@ package no.ndla.imageapi.controller
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.ImageApiProperties.{MaxImageFileSizeBytes, RoleWithWriteAccess}
 import no.ndla.imageapi.auth.{Role, User}
-import no.ndla.imageapi.model.api.{Error, ImageMetaInformationV2, ImageVariant, License, NewImageMetaInformationV2, SearchParams, SearchResult, StoredParameters, UpdateImageMetaInformation, ValidationError}
+import no.ndla.imageapi.model.api.{Error, ImageMetaInformationV2, ImageVariant, License, NewImageMetaInformationV2, SearchParams, SearchResult, StoredParameters, UpdateImageMetaInformation, ValidationError, ImageUrl}
 import no.ndla.imageapi.model.domain.Sort
 import no.ndla.imageapi.model.{Language, ValidationException, ValidationMessage}
 import no.ndla.imageapi.repository.ImageRepository
@@ -173,9 +173,17 @@ trait ImageControllerV2 {
     get("/:image_id/imageUrl/?") {
       val imageId = long(this.imageId.paramName)
       val width = intOrNoneWithValidation("width")
-      imageRepository.withId(imageId).map(metadata => ImageUrlBuilder.urlFor(metadata, width)) match {
-        case Some(url) => url
+      val language = paramOrNone(this.language.paramName).map(LanguageTag(_)).getOrElse(Language.DefaultLanguage)
+      imageRepository.withId(imageId) match {
         case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"Image with id $imageId and language $language not found"))
+        case Some(meta) =>
+          val alttext = Language.findByLanguageOrBestEffort(meta.alttexts, language).map(_.alttext.trim) match {
+            case Some(str) if !str.isEmpty => Some(str)
+            case _ => None
+          }
+          ImageUrl(imageId.toString,
+            ImageUrlBuilder.urlFor(meta, width),
+            alttext)
       }
     }
 
