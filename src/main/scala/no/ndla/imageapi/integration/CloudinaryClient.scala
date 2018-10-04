@@ -33,7 +33,7 @@ trait CloudinaryClient {
     }
 
     def uploadFromFile(file: File, publicId: String): Map[String, String] = {
-      val options = ObjectUtils.asMap("public_id", publicId, "folder", ImageApiProperties.Environment)
+      val options = ObjectUtils.asMap("public_id", publicId)
       val upload = client.uploader.upload(file, options)
       upload.asScala.map(x => (x._1.toString, x._2.toString)).toSet.toMap
     }

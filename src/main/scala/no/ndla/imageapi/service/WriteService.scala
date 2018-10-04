@@ -23,7 +23,7 @@ trait WriteService {
       imageRepository.getImageVariant(imageUrl, imageVariant.ratio) match {
         case None => imageRepository.insertImageVariant(converterService.asDomainImageVariant(imageUrl, imageVariant)).map(converterService.asApiImageVariant)
         case Some(storedVariant) => {
-          val toUpdate = storedVariant.copy(topLeftX = imageVariant.topLeftX, topLeftY = imageVariant.topLeftY, width = imageVariant.width, height = imageVariant.height)
+          val toUpdate = storedVariant.copy(topLeftX = imageVariant.topLeftX, topLeftY = imageVariant.topLeftY, width = imageVariant.width, height = imageVariant.height, revision = imageVariant.revision)
           imageRepository.updateImageVariant(toUpdate).map(converterService.asApiImageVariant)
         }
       }
@@ -124,7 +124,7 @@ trait WriteService {
       val bytes = file.get()
       val storageKey = md5Hash(bytes)
       if (imageStorage.objectExists(storageKey)) {
-        logger.info(s"$storageKey already exists in S3, skipping upload and using existing image")
+        logger.info(s"$storageKey already exists, skipping upload and using existing image")
         Success(Image(storageKey, file.size, contentType))
       } else {
         imageStorage.uploadFromStream(new ByteArrayInputStream(bytes), storageKey, contentType, file.size).map(filePath => {

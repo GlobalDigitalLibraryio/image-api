@@ -279,7 +279,8 @@ trait ImageControllerV2 {
 
       Try(extract[ImageVariant](request.body)).toOption match {
         case Some(imageVariant) => imageRepository.withId(imageId).map(_.imageUrl).map(url => writeService.storeImageVariant(url, imageVariant)) match {
-          case Some(updatedVariant) => updatedVariant
+          case Some(Success(updatedVariant)) => updatedVariant
+          case Some(Failure(ex)) => errorHandler(ex)
           case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"Image with id $imageId not found"))
         }
         case None => throw new ValidationException(errors = Seq(ValidationMessage("body", "Invalid body for parameters")))
