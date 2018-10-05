@@ -90,7 +90,7 @@ object ImageApiProperties extends LazyLogging {
   val CloudinaryCloudName: String = prop(CloudinaryCloudNameKey)
   val CloudinaryUrl = s"https://res.cloudinary.com/$CloudinaryCloudName/f_auto,q_auto"
 
-  lazy val secrets = readSecrets(SecretsFile, Set(CloudinaryCloudNameKey, CloudinaryApiKeyKey, CloudinarySecretKey)) match {
+  lazy val secrets = readSecrets(SecretsFile) match {
      case Success(values) => values
      case Failure(exception) => throw new RuntimeException(s"Unable to load remote secrets from $SecretsFile", exception)
    }
