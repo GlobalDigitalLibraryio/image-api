@@ -44,6 +44,7 @@ object ComponentRegistry
   with User
   with Role
   with Clock
+  with CloudinaryClient
 {
   def connectToDatabase(): Unit = ConnectionPool.singleton(new DataSourceConnectionPool(dataSource))
 
@@ -96,4 +97,5 @@ object ComponentRegistry
   lazy val authUser = new AuthUser
   lazy val authRole = new AuthRole
   lazy val clock = new SystemClock
+  lazy val cloudinaryClient = new CloudinaryClient(ImageApiProperties.CloudinaryCloudName, ImageApiProperties.CloudinaryApiKey, ImageApiProperties.CloudinarySecret)
 }

@@ -28,6 +28,9 @@ abstract class UnitSuite extends FunSuite with Matchers with OptionValues with I
   setEnv("MIGRATION_USER", "some-user")
   setEnv("MIGRATION_PASSWORD", "some-password")
   setEnv("SEARCH_INDEX_NAME", "image-integration-test-index")
+  setEnv("CLOUDINARY_CLOUD_NAME", "cloudinary-cloud-name")
+  setEnv("CLOUDINARY_API_KEY", "cloudinary-api-key")
+  setEnv("CLOUDINARY_API_SECRET", "cloudinary-api-secret")
 
 
   def setEnv(key: String, value: String) = {

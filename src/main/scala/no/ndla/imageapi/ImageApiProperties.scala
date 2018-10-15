@@ -19,6 +19,7 @@ import scala.util.Properties._
 
 
 object ImageApiProperties extends LazyLogging {
+
   val SecretsFile = "image-api.secrets"
 
   val RoleWithWriteAccess = "images:write"
@@ -79,6 +80,15 @@ object ImageApiProperties extends LazyLogging {
 
   lazy val Domain = Domains.get(Environment)
   val ImageApiUrlBase = Domain + ImageControllerPath + "/"
+
+  val CloudinaryCloudNameKey = "CLOUDINARY_CLOUD_NAME"
+  val CloudinaryApiKeyKey = "CLOUDINARY_API_KEY"
+  val CloudinarySecretKey = "CLOUDINARY_API_SECRET"
+
+  val CloudinarySecret: String = prop(CloudinarySecretKey)
+  val CloudinaryApiKey: String = prop(CloudinaryApiKeyKey)
+  val CloudinaryCloudName: String = prop(CloudinaryCloudNameKey)
+  val CloudinaryUrl = s"https://res.cloudinary.com/$CloudinaryCloudName/f_auto,q_auto"
 
   lazy val secrets = readSecrets(SecretsFile) match {
      case Success(values) => values

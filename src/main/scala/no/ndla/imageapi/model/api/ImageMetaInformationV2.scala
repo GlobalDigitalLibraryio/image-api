@@ -18,4 +18,5 @@ case class ImageMetaInformationV2(@(ApiModelProperty@field)(description = "The u
                                   @(ApiModelProperty@field)(description = "Describes the copyright information for the image") copyright: Copyright,
                                   @(ApiModelProperty@field)(description = "Searchable tags for the image") tags: ImageTag,
                                   @(ApiModelProperty@field)(description = "Searchable caption for the image") caption: ImageCaption,
-                                  @(ApiModelProperty@field)(description = "Supported languages for the image title, alt-text, tags and caption.") supportedLanguages: Seq[LanguageTag])
+                                  @(ApiModelProperty@field)(description = "Supported languages for the image title, alt-text, tags and caption.") supportedLanguages: Seq[LanguageTag],
+                                  @(ApiModelProperty@field)(description = "Variants of the image") imageVariants: Option[Map[String, ImageVariant]])

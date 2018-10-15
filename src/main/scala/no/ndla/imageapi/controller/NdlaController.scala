@@ -13,12 +13,12 @@ import java.lang.Math.{max, min}
 import com.typesafe.scalalogging.LazyLogging
 import io.digitallibrary.network.{ApplicationUrl, AuthUser, CorrelationID}
 import javax.servlet.http.HttpServletRequest
-
 import no.ndla.imageapi.ComponentRegistry
 import no.ndla.imageapi.ImageApiProperties.{CorrelationIdHeader, CorrelationIdKey}
 import no.ndla.imageapi.model._
 import no.ndla.imageapi.model.api.{Error, ValidationError}
 import no.ndla.imageapi.model.domain.ImageStream
+import no.ndla.imageapi.repository.OptimisticLockException
 import org.apache.logging.log4j.ThreadContext
 import org.elasticsearch.index.IndexNotFoundException
 import org.json4s.native.Serialization.read
@@ -54,6 +54,7 @@ abstract class NdlaController extends ScalatraServlet with NativeJsonSupport wit
     case a: AccessDeniedException => Forbidden(body = Error(Error.ACCESS_DENIED, a.getMessage))
     case e: IndexNotFoundException => InternalServerError(body = Error.IndexMissingError)
     case i: ImageNotFoundException => NotFound(body = Error(Error.NOT_FOUND, i.getMessage))
+    case ol: OptimisticLockException => Conflict(body=Error(Error.CONFLICT, ol.getMessage))
     case b: ImportException => UnprocessableEntity(body = Error(Error.IMPORT_FAILED, b.getMessage))
     case s: S3UploadException => {
       contentType = formats("json")

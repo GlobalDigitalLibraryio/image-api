@@ -65,7 +65,7 @@ trait InternController {
       val externalId = params("image_id")
       val language = paramOrNone("language").map(LanguageTag(_)).getOrElse(Language.DefaultLanguage)
       imageRepository.withExternalId(externalId) match {
-        case Some(image) => Ok(converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(image, language))
+        case Some(image) => Ok(converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(image, language, imageRepository.getImageVariants(image.imageUrl)))
         case None => NotFound(Error(Error.NOT_FOUND, s"Image with external id $externalId not found"))
       }
     }

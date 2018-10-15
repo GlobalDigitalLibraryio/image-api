@@ -16,7 +16,7 @@ import no.ndla.imageapi.ImageApiProperties
 import no.ndla.imageapi.ImageApiProperties.DefaultLanguage
 import no.ndla.imageapi.model.Language
 import no.ndla.imageapi.model.api.{ImageAltText, ImageMetaSummary, ImageTitle}
-import no.ndla.imageapi.model.domain.ImageMetaInformation
+import no.ndla.imageapi.model.domain.{ImageMetaInformation, StorageService}
 import no.ndla.imageapi.model.search.{LanguageValue, SearchableImage, SearchableLanguageList, SearchableLanguageValues}
 import no.ndla.imageapi.service.ConverterService
 
@@ -44,7 +44,8 @@ trait SearchConverterService {
         imageSize = imageWithAgreement.size,
         previewUrl = parse(imageWithAgreement.imageUrl).toString,
         lastUpdated = imageWithAgreement.updated,
-        defaultTitle = defaultTitle.map(t => t.title)
+        defaultTitle = defaultTitle.map(t => t.title),
+        storageService = imageWithAgreement.storageService.map(_.toString)
       )
     }
 
@@ -64,12 +65,17 @@ trait SearchConverterService {
         searchableImage.tags.languageValues
       )
 
+      val previewUrl = StorageService.valueOf(searchableImage.storageService.getOrElse("AWS")) match {
+        case StorageService.CLOUDINARY => ImageApiProperties.CloudinaryUrl + searchableImage.previewUrl
+        case StorageService.AWS => ImageApiProperties.CloudFrontUrl + searchableImage.previewUrl
+      }
+
       ImageMetaSummary(
         id = searchableImage.id.toString,
         title = title,
         contributors = searchableImage.contributors,
         altText = altText,
-        previewUrl = ImageApiProperties.CloudFrontUrl + searchableImage.previewUrl,
+        previewUrl = previewUrl,
         metaUrl = ApplicationUrl.get + searchableImage.id,
         license = searchableImage.license,
         supportedLanguages = supportedLanguages

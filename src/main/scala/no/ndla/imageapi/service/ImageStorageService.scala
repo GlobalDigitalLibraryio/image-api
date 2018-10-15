@@ -10,23 +10,31 @@ package no.ndla.imageapi.service
 
 import java.awt.image.BufferedImage
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream}
-import javax.imageio.ImageIO
+import java.net.URL
 
-import com.amazonaws.services.s3.model._
+import com.amazonaws.services.s3.model.{GetObjectRequest, S3Object}
 import com.typesafe.scalalogging.LazyLogging
+import javax.imageio.ImageIO
 import no.ndla.imageapi.ImageApiProperties.StorageName
-import no.ndla.imageapi.integration.AmazonClient
+import no.ndla.imageapi.integration.{AmazonClient, CloudinaryClient}
 import no.ndla.imageapi.model.ImageNotFoundException
-import no.ndla.imageapi.model.domain.{Image, ImageStream}
+import no.ndla.imageapi.model.domain.{CloudinaryInfo, Image, ImageStream, MediaType}
+import scalaj.http.HttpRequest
 
 import scala.util.{Failure, Success, Try}
-import scalaj.http.{Http, HttpRequest}
 
 trait ImageStorageService {
-  this: AmazonClient =>
+  this: AmazonClient with CloudinaryClient =>
   val imageStorage: AmazonImageStorageService
 
   class AmazonImageStorageService extends LazyLogging {
+
+    case class CloudinaryImage(cloudinaryImage: CloudinaryInfo, storageKey: String) extends ImageStream {
+      override def contentType: String = MediaType.fromFileExtension(cloudinaryImage.format).toString
+      override def stream: InputStream = new URL(cloudinaryImage.url).openStream()
+      override def fileName: String = cloudinaryImage.publicId
+      override val sourceImage: BufferedImage = ImageIO.read(new URL(cloudinaryImage.url))
+    }
 
     case class NdlaImage(s3Object: S3Object, fileName: String) extends ImageStream {
       override val sourceImage: BufferedImage = {
@@ -56,26 +64,13 @@ trait ImageStorageService {
       request.execute(stream => uploadFromStream(stream, storageKey, image.contentType, image.size)).body
 
     def uploadFromStream(stream: InputStream, storageKey: String, contentType: String, size: Long): Try[String] = {
-      val metadata = new ObjectMetadata()
-      metadata.setContentType(contentType)
-      metadata.setContentLength(size)
-
-      Try(amazonClient.putObject(new PutObjectRequest(StorageName, storageKey, stream, metadata))).map(_ => storageKey)
+      Try(cloudinaryClient.uploadFromStream(stream, storageKey).find(_._1 == "public_id").get._2)
     }
 
-    def objectExists(storageKey: String): Boolean = {
-      Try(amazonClient.doesObjectExist(StorageName, storageKey)).getOrElse(false)
-    }
+    def objectExists(storageKey: String): Boolean = cloudinaryClient.doesObjectExist(storageKey)
 
-    def objectSize(storageKey: String): Long = {
-      Try(amazonClient.getObjectMetadata(StorageName, storageKey)).map(_.getContentLength).getOrElse(0)
-    }
+    def deleteObject(storageKey: String): Try[_] = cloudinaryClient.deleteObject(storageKey)
 
-    def deleteObject(storageKey: String): Try[_] = Try(amazonClient.deleteObject(StorageName, storageKey))
-
-    def createBucket: Bucket = amazonClient.createBucket(new CreateBucketRequest(StorageName))
-
-    def bucketExists: Boolean = amazonClient.doesBucketExist(StorageName)
   }
 
 }

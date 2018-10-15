@@ -11,12 +11,12 @@ package no.ndla.imageapi.controller
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.ImageApiProperties.{MaxImageFileSizeBytes, RoleWithWriteAccess}
 import no.ndla.imageapi.auth.{Role, User}
-import no.ndla.imageapi.model.api.{Error, ImageMetaInformationV2, NewImageMetaInformationV2, SearchParams, SearchResult, StoredParameters, UpdateImageMetaInformation, ValidationError, License}
+import no.ndla.imageapi.model.api.{Error, ImageMetaInformationV2, ImageVariant, License, NewImageMetaInformationV2, SearchParams, SearchResult, StoredParameters, UpdateImageMetaInformation, ValidationError, ImageUrl}
 import no.ndla.imageapi.model.domain.Sort
 import no.ndla.imageapi.model.{Language, ValidationException, ValidationMessage}
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.search.SearchService
-import no.ndla.imageapi.service.{ConverterService, WriteService}
+import no.ndla.imageapi.service.{ConverterService, ImageUrlBuilder, WriteService}
 import org.json4s.{DefaultFormats, Formats}
 import org.scalatra.servlet.{FileUploadSupport, MultipartConfig}
 import org.scalatra.swagger.DataType.ValueDataType
@@ -158,50 +158,32 @@ trait ImageControllerV2 {
         )
         responseMessages(response404, response500))
 
-    val getStoredParameters =
-      (apiOperation[StoredParameters]("getStoredParameters")
-        summary "Get stored parameters"
-        notes "Get all stored parameters for an image"
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        asPathParam[String](imageUrl))
-        responseMessages(response404, response400, response500))
-
-    get("/stored-parameters/:image_url", operation(getStoredParameters)) {
-      (for {
-        imageUrl <- paramOrNone("image_url").map(s => s"/$s")
-        parameters <- imageRepository.getStoredParameters(imageUrl)
-      } yield parameters) match {
-        case Some(storedParameters) => storedParameters
-        case None => halt(status = 404, body = Error(Error.NOT_FOUND, "Stored parameters not found"))
-      }
-    }
-
-    val postStoredParameters =
-      (apiOperation[StoredParameters]("postStoredParameters")
-        summary "Post stored parameters"
-        notes "Insert or update stored parameters for an image"
-        parameters(
-        asHeaderParam[Option[String]](correlationId),
-        bodyParam[StoredParameters]
-      )
-        responseMessages(response404, response400, response500))
-
-    post("/stored-parameters", operation(postStoredParameters)) {
-      authUser.assertHasId()
-      authRole.assertHasRole(RoleWithWriteAccess)
-      Try(extract[StoredParameters](request.body)).toOption match {
-        case Some(parameters) => writeService.storeParameters(parameters)
-        case None => throw new ValidationException(errors = Seq(ValidationMessage("body", "Invalid body for parameters")))
-      }
-    }
-
     get("/:image_id", operation(getByImageId)) {
       val imageId = long(this.imageId.paramName)
       val language = paramOrNone(this.language.paramName).map(LanguageTag(_)).getOrElse(Language.DefaultLanguage)
-      imageRepository.withId(imageId).flatMap(image => converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(image, language)) match {
+      imageRepository.withId(imageId).flatMap(image => {
+
+        converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(image, language, imageRepository.getImageVariants(image.imageUrl))
+      }) match {
         case Some(image) => image
         case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"Image with id $imageId and language $language not found"))
+      }
+    }
+
+    get("/:image_id/imageUrl/?") {
+      val imageId = long(this.imageId.paramName)
+      val width = intOrNoneWithValidation("width")
+      val language = paramOrNone(this.language.paramName).map(LanguageTag(_)).getOrElse(Language.DefaultLanguage)
+      imageRepository.withId(imageId) match {
+        case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"Image with id $imageId and language $language not found"))
+        case Some(meta) =>
+          val alttext = Language.findByLanguageOrBestEffort(meta.alttexts, language).map(_.alttext.trim) match {
+            case Some(str) if !str.isEmpty => Some(str)
+            case _ => None
+          }
+          ImageUrl(imageId.toString,
+            ImageUrlBuilder.urlFor(meta, width),
+            alttext)
       }
     }
 
@@ -233,7 +215,7 @@ trait ImageControllerV2 {
       }
 
       writeService.storeNewImage(newImage, file)
-        .map(img => converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(img, newImage.language)) match {
+        .map(img => converterService.asApiImageMetaInformationWithApplicationUrlAndSingleLanguage(img, newImage.language, imageRepository.getImageVariants(img.imageUrl))) match {
         case Success(imageMeta) => imageMeta
         case Failure(e) => errorHandler(e)
       }
@@ -270,6 +252,50 @@ trait ImageControllerV2 {
     get("/licenses", operation(getLicenses)) {
       io.digitallibrary.license.model.LicenseList.licenses.map(lic => License(lic.name, lic.description, Some(lic.url)))
     }
+
+    val getImageVariants =
+      (apiOperation[ImageVariant]("getImageVariants")
+        summary "Get the image variants"
+        notes "Get all variants for an image"
+        parameters(
+        asHeaderParam[Option[String]](correlationId),
+        asPathParam[String](imageId))
+        responseMessages(response404, response400, response500))
+
+    get("/:image_id/variants/?", operation(getImageVariants)) {
+      val imageId = long(this.imageId.paramName)
+      imageRepository.withId(imageId).map(_.imageUrl).map(imageRepository.getImageVariants) match {
+        case Some(variants) => variants
+        case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"No variants found for image with id $imageId"))
+      }
+    }
+
+    val postImageVariants =
+      (apiOperation[ImageVariant]("postImageVariants")
+        summary "Post a variant for an image"
+        notes "Insert or update a variant for an image"
+        parameters(
+        asHeaderParam[Option[String]](correlationId),
+        bodyParam[StoredParameters]
+      )
+        responseMessages(response404, response400, response500))
+
+    post("/:image_id/variants/?", operation(postImageVariants)) {
+      authUser.assertHasId()
+      authRole.assertHasRole(RoleWithWriteAccess)
+      val imageId = long(this.imageId.paramName)
+
+      Try(extract[ImageVariant](request.body)).toOption match {
+        case Some(imageVariant) => imageRepository.withId(imageId).map(_.imageUrl).map(url => writeService.storeImageVariant(url, imageVariant)) match {
+          case Some(Success(updatedVariant)) => updatedVariant
+          case Some(Failure(ex)) => errorHandler(ex)
+          case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"Image with id $imageId not found"))
+        }
+        case None => throw new ValidationException(errors = Seq(ValidationMessage("body", "Invalid body for parameters")))
+      }
+    }
+
+
 
   }
 

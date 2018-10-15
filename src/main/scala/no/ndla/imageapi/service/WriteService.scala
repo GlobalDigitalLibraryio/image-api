@@ -5,7 +5,7 @@ import java.io.ByteArrayInputStream
 import com.typesafe.scalalogging.LazyLogging
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.auth.User
-import no.ndla.imageapi.model.api.{ImageMetaInformationV2, NewImageMetaInformationV2, StoredParameters, UpdateImageMetaInformation}
+import no.ndla.imageapi.model.api._
 import no.ndla.imageapi.model.domain.{Image, ImageMetaInformation, LanguageField}
 import no.ndla.imageapi.model.{ImageNotFoundException, ValidationException, domain}
 import no.ndla.imageapi.repository.ImageRepository
@@ -19,10 +19,13 @@ trait WriteService {
   val writeService: WriteService
 
   class WriteService extends LazyLogging {
-    def storeParameters(parameters: StoredParameters): Try[StoredParameters] = {
-      validationService.validateStoredParameters(parameters) match {
-        case Some(validationMessage) => Failure(new ValidationException(errors = Seq(validationMessage)))
-        case None => Try(imageRepository.insertOrUpdateStoredParameters(parameters))
+    def storeImageVariant(imageUrl: String, imageVariant: ImageVariant): Try[ImageVariant] = {
+      imageRepository.getImageVariant(imageUrl, imageVariant.ratio) match {
+        case None => imageRepository.insertImageVariant(converterService.asDomainImageVariant(imageUrl, imageVariant)).map(converterService.asApiImageVariant)
+        case Some(storedVariant) => {
+          val toUpdate = storedVariant.copy(topLeftX = imageVariant.topLeftX, topLeftY = imageVariant.topLeftY, width = imageVariant.width, height = imageVariant.height, revision = imageVariant.revision)
+          imageRepository.updateImageVariant(toUpdate).map(converterService.asApiImageVariant)
+        }
       }
     }
 
@@ -50,7 +53,7 @@ trait WriteService {
         case _ =>
       }
 
-      val imageMeta = Try(imageRepository.insert(domainImage, Some(newImage.externalId))) match {
+      val imageMeta = Try(imageRepository.insertImageMeta(domainImage, Some(newImage.externalId))) match {
         case Success(meta) => meta
         case Failure(e) =>
           imageStorage.deleteObject(domainImage.imageUrl)
@@ -99,9 +102,9 @@ trait WriteService {
       }
 
       updateImage.flatMap(validationService.validate)
-        .map(imageMeta => imageRepository.update(imageMeta, imageId))
+        .map(imageMeta => imageRepository.updateImageMeta(imageMeta, imageId))
         .flatMap(indexService.indexDocument)
-        .map(updatedImage => converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(updatedImage, LanguageTag(image.language)).get)
+        .map(updatedImage => converterService.asApiImageMetaInformationWithDomainUrlAndSingleLanguage(updatedImage, LanguageTag(image.language), imageRepository.getImageVariants(updatedImage.imageUrl)).get)
     }
 
     private[service] def mergeLanguageFields[A <: LanguageField[String]](existing: Seq[A], updated: Seq[A]): Seq[A] = {
@@ -119,12 +122,12 @@ trait WriteService {
     private[service] def uploadImage(file: FileItem): Try[Image] = {
       val contentType = file.getContentType.getOrElse("")
       val bytes = file.get()
-      val fileName = filenameToHashFilename(file.name, md5Hash(bytes))
-      if (imageStorage.objectExists(fileName)) {
-        logger.info(s"$fileName already exists in S3, skipping upload and using existing image")
-        Success(Image(fileName, file.size, contentType))
+      val storageKey = md5Hash(bytes)
+      if (imageStorage.objectExists(storageKey)) {
+        logger.info(s"$storageKey already exists, skipping upload and using existing image")
+        Success(Image(storageKey, file.size, contentType))
       } else {
-        imageStorage.uploadFromStream(new ByteArrayInputStream(bytes), fileName, contentType, file.size).map(filePath => {
+        imageStorage.uploadFromStream(new ByteArrayInputStream(bytes), storageKey, contentType, file.size).map(filePath => {
           Image(filePath, file.size, contentType)
         })
       }

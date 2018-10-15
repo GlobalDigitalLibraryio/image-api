@@ -42,6 +42,7 @@ trait TestEnvironment
     with User
     with Role
     with Clock
+    with CloudinaryClient
 {
   val amazonClient = mock[AmazonS3]
   val esClient = mock[E4sClient]
@@ -67,4 +68,5 @@ trait TestEnvironment
   val clock = mock[SystemClock]
   val authUser = mock[AuthUser]
   val authRole = new AuthRole
+  val cloudinaryClient = mock[CloudinaryClient]
 }

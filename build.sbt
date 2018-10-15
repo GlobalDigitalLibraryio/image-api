@@ -32,7 +32,7 @@ lazy val image_api = (project in file(".")).
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
     scalacOptions := Seq("-target:jvm-1.8", "-unchecked", "-deprecation", "-feature"),
     libraryDependencies ++= Seq(
-      "gdl" %% "network" % "0.10",
+      "gdl" %% "network" % "0.12",
       "ndla" %% "mapping" % "0.8",
       "gdl" %% "language" % "0.5",
       "gdl" %% "license" % "0.2",
@@ -71,7 +71,8 @@ lazy val image_api = (project in file(".")).
       "io.sentry" % "sentry-log4j2" % "1.7.3",
       // These two are not strictly needed, for most cases, but offers better handling of loading images with encoding issues
       "com.twelvemonkeys.imageio" % "imageio-core" % "3.3.2",
-      "com.twelvemonkeys.imageio" % "imageio-jpeg" % "3.3.2"
+      "com.twelvemonkeys.imageio" % "imageio-jpeg" % "3.3.2",
+      "com.cloudinary" % "cloudinary-http44" % "1.2.1"
     )
   ).enablePlugins(DockerPlugin).enablePlugins(GitVersioning).enablePlugins(JettyPlugin)
 

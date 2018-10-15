@@ -28,5 +28,5 @@ case class SearchableImage (id: Long,
                             imageSize: Long,
                             previewUrl: String,
                             lastUpdated: Date,
-                            defaultTitle: Option[String]
-                           )
+                            defaultTitle: Option[String],
+                            storageService: Option[String])
