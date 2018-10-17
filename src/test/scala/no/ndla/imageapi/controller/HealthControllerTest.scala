@@ -15,15 +15,12 @@ import scalaj.http.HttpResponse
 
 class HealthControllerTest extends UnitSuite with TestEnvironment with ScalatraFunSuite {
 
-  val httpResponseMock: HttpResponse[String] = mock[HttpResponse[String]]
 
-  lazy val controller = new HealthController {
-    override def getApiResponse(url: String): HttpResponse[String] = httpResponseMock
-  }
+  lazy val controller = new HealthController
+
   addServlet(controller, "/")
 
   test("that /health returns 200 on success") {
-    when(httpResponseMock.code).thenReturn(200)
     when(imageRepository.getRandomImage()).thenReturn(Some(TestData.bjorn))
 
     get("/") {
@@ -31,22 +28,21 @@ class HealthControllerTest extends UnitSuite with TestEnvironment with ScalatraF
     }
   }
 
-  test("that /health returns 500 on failure") {
-    when(httpResponseMock.code).thenReturn(500)
-    when(imageRepository.getRandomImage()).thenReturn(Some(TestData.elg))
-
-    get("/") {
-      status should equal(500)
-    }
-  }
-
   test("that /health returns 200 on no images") {
-    when(httpResponseMock.code).thenReturn(404)
     when(imageRepository.getRandomImage()).thenReturn(None)
 
     get("/") {
       status should equal(200)
     }
   }
+
+  test("that /health returns 500 on failure") {
+    when(imageRepository.getRandomImage()).thenThrow(new RuntimeException("Could not query database"))
+
+    get("/") {
+      status should equal(500)
+    }
+  }
+
 
 }
