@@ -22,8 +22,7 @@ trait HealthController {
   class HealthController extends ScalatraServlet with LazyLogging {
     get("/") {
       Try(imageRepository.getRandomImage()) match {
-        case Success(Some(_)) => Ok()
-        case Success(None) => Ok()
+        case Success(_) => Ok()
         case Failure(ex) => {
           logger.error("HealthController could not query database", ex)
           InternalServerError()
