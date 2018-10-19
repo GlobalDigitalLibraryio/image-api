@@ -276,7 +276,8 @@ trait ImageControllerV2 {
         notes "Insert or update a variant for an image"
         parameters(
         asHeaderParam[Option[String]](correlationId),
-        bodyParam[StoredParameters]
+        asPathParam[String](imageId),
+        bodyParam[ImageVariant]
       )
         responseMessages(response404, response400, response500))
 

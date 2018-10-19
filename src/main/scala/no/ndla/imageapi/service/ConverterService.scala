@@ -25,7 +25,7 @@ trait ConverterService {
 
   class ConverterService extends LazyLogging {
     def asDomainImageVariant(imageUrl: String, variant: api.ImageVariant): domain.ImageVariant = {
-      ImageVariant(imageUrl, variant.ratio, variant.revision, variant.topLeftX, variant.topLeftY, variant.width, variant.height)
+      ImageVariant(imageUrl, variant.ratio, variant.revision, variant.x, variant.y, variant.width, variant.height)
     }
 
 
