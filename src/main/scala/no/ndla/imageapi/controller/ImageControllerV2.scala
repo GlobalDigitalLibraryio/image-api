@@ -11,13 +11,14 @@ package no.ndla.imageapi.controller
 import io.digitallibrary.language.model.LanguageTag
 import no.ndla.imageapi.ImageApiProperties.{MaxImageFileSizeBytes, RoleWithWriteAccess}
 import no.ndla.imageapi.auth.{Role, User}
-import no.ndla.imageapi.model.api.{Error, ImageMetaInformationV2, ImageVariant, License, NewImageMetaInformationV2, SearchParams, SearchResult, StoredParameters, UpdateImageMetaInformation, ValidationError, ImageUrl}
+import no.ndla.imageapi.model.api.{Error, ImageMetaInformationV2, ImageUrl, ImageVariant, License, NewImageMetaInformationV2, SearchParams, SearchResult, StoredParameters, UpdateImageMetaInformation, ValidationError}
 import no.ndla.imageapi.model.domain.Sort
 import no.ndla.imageapi.model.{Language, ValidationException, ValidationMessage}
 import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.search.SearchService
 import no.ndla.imageapi.service.{ConverterService, ImageUrlBuilder, WriteService}
 import org.json4s.{DefaultFormats, Formats}
+import org.scalatra.Ok
 import org.scalatra.servlet.{FileUploadSupport, MultipartConfig}
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger._
@@ -264,9 +265,9 @@ trait ImageControllerV2 {
 
     get("/:image_id/variants/?", operation(getImageVariants)) {
       val imageId = long(this.imageId.paramName)
-      imageRepository.withId(imageId).map(_.imageUrl).map(imageRepository.getImageVariants).map(converterService.asApiImageVariants) match {
-        case Some(variants) => variants
+      imageRepository.withId(imageId).map(_.imageUrl).map(imageRepository.getImageVariants).flatMap(converterService.asApiImageVariants) match {
         case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"No variants found for image with id $imageId"))
+        case Some(variants) => variants
       }
     }
 
