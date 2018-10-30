@@ -18,7 +18,7 @@ import no.ndla.imageapi.repository.ImageRepository
 import no.ndla.imageapi.service.search.SearchService
 import no.ndla.imageapi.service.{ConverterService, ImageUrlBuilder, WriteService}
 import org.json4s.{DefaultFormats, Formats}
-import org.scalatra.Ok
+import org.scalatra.{NoContent, Ok}
 import org.scalatra.servlet.{FileUploadSupport, MultipartConfig}
 import org.scalatra.swagger.DataType.ValueDataType
 import org.scalatra.swagger._
@@ -266,7 +266,7 @@ trait ImageControllerV2 {
     get("/:image_id/variants/?", operation(getImageVariants)) {
       val imageId = long(this.imageId.paramName)
       imageRepository.withId(imageId).map(_.imageUrl).map(imageRepository.getImageVariants).flatMap(converterService.asApiImageVariants) match {
-        case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"No variants found for image with id $imageId"))
+        case None => NoContent()
         case Some(variants) => variants
       }
     }
