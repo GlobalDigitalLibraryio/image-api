@@ -265,9 +265,13 @@ trait ImageControllerV2 {
 
     get("/:image_id/variants/?", operation(getImageVariants)) {
       val imageId = long(this.imageId.paramName)
-      imageRepository.withId(imageId).map(_.imageUrl).map(imageRepository.getImageVariants).flatMap(converterService.asApiImageVariants) match {
-        case None => NoContent()
-        case Some(variants) => variants
+
+      imageRepository.withId(imageId) match {
+        case None => halt(status = 404, body = Error(Error.NOT_FOUND, s"Image with id $imageId not found"))
+        case Some(imageMeta) => converterService.asApiImageVariants(imageRepository.getImageVariants(imageMeta.imageUrl)) match {
+          case None => NoContent()
+          case Some(variants) => variants
+        }
       }
     }
 
