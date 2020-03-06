@@ -34,7 +34,7 @@ lazy val image_api = (project in file(".")).
     libraryDependencies ++= Seq(
       "gdl" %% "network" % "0.12",
       "ndla" %% "mapping" % "0.8",
-      "gdl" %% "language" % "0.5",
+      "gdl" %% "language" % "0.8",
       "gdl" %% "license" % "0.2",
       "joda-time" % "joda-time" % "2.8.2",
       "org.scalatra" %% "scalatra" % Scalatraversion,
